@@ -1,0 +1,413 @@
+// This is your Prisma schema file for local SQLite testing
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Tenant {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  logoUrl       String?
+  currency      String   @default("KES")
+  taxRate       Float    @default(16.0)
+  loyaltyEarnRate Float  @default(100.0) // Points earned per KES spent (1 point per 100 KES)
+  receiptFooter String   @default("Thank you for your visit!")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // M-Pesa Configuration (optional — enables STK Push for this tenant)
+  mpesaConsumerKey    String?  // Safaricom Daraja Consumer Key
+  mpesaConsumerSecret String?  // Safaricom Daraja Consumer Secret
+  mpesaShortcode      String?  // Paybill or Till Number
+  mpesaPasskey        String?  // Lipa na M-Pesa Online Passkey
+  mpesaTillDisplay    String?  // Human-readable Till number shown to customers (e.g. "522522")
+
+  users               User[]
+  categories          Category[]
+  menuItems           MenuItem[]
+  rooms               Room[]
+  orders              Order[]
+  payments            Payment[]
+  roomCharges         RoomCharge[]
+  inventoryItems      InventoryItem[]
+  stockTransactions   StockTransaction[]
+  guests              Guest[]
+  loyaltyTransactions LoyaltyTransaction[]
+  messages            Message[]
+  tables              Table[]
+  suppliers           Supplier[]
+  purchaseOrders      PurchaseOrder[]
+  bookings            Booking[]
+  shifts              Shift[]
+}
+
+model User {
+  id               String    @id @default(uuid())
+  tenantId         String?
+  name             String
+  email            String    @unique
+  passwordHash     String?
+  role             String    @default("cashier")
+  isActive         Boolean   @default(true)
+  googleId         String?   @unique
+  facebookId       String?   @unique
+  permissions      String?   @default("[]") // JSON array of permission strings
+  preferences      String?   @default("{}") // JSON: notification prefs, theme, region
+  lastLoginAt      DateTime?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id])
+  orders            Order[]
+  stockTransactions StockTransaction[]
+  messages          Message[]
+  channelReads      UserChannelRead[]
+  shifts            Shift[]
+}
+
+
+model Category {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  icon      String   @default("🍽️")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  menuItems MenuItem[]
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  tenantId    String
+  categoryId  String
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  emoji       String   @default("🍽️")
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  category    Category             @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+  ingredients MenuItemIngredient[]
+
+  isArchived  Boolean  @default(false) // F-18: soft-delete flag
+}
+
+model Room {
+  id          String    @id @default(uuid())
+  tenantId    String
+  number      String
+  type        String    @default("Standard")
+  floor       Int?
+  tariff      Float     @default(0) // Nightly accommodation rate
+  status      String    @default("available")
+  guestName   String?
+  checkedInAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  orders      Order[]
+  payments    Payment[]
+  roomCharges RoomCharge[]
+  bookings    Booking[]
+
+  @@unique([tenantId, number])
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  tenantId    String
+  cashierId   String
+  orderNumber String
+  status      String   @default("pending")
+  orderType   String   @default("dine_in")
+  tableRef    String?
+  roomId      String?
+  subtotal        Float    @default(0)
+  taxAmount       Float    @default(0)
+  discount        Float    @default(0) // Logic-calculated discount (loyalty + manual)
+  discountFixed   Float    @default(0) // Manual fixed discount
+  discountPercent Float    @default(0) // Manual percentage discount
+  total           Float    @default(0)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  guestId             String?
+  tableId             String?
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  cashier             User                 @relation(fields: [cashierId], references: [id])
+  room                Room?                @relation(fields: [roomId], references: [id])
+  table               Table?               @relation(fields: [tableId], references: [id])
+  guest               Guest?               @relation(fields: [guestId], references: [id])
+  items               OrderItem[]
+  payments            Payment[]
+  roomCharges         RoomCharge[]
+  loyaltyTransactions LoyaltyTransaction[]
+  shiftId             String?
+  shift               Shift?               @relation(fields: [shiftId], references: [id])
+
+  @@unique([tenantId, orderNumber])
+}
+
+model Table {
+  id        String   @id @default(uuid())
+  tenantId  String
+  number    String
+  capacity  Int      @default(2)
+  x         Float    @default(0) // Floor plan X position
+  y         Float    @default(0) // Floor plan Y position
+  status    String   @default("available") // available, occupied, reserved
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  orders Order[]
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  contact   String?
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  purchaseOrders PurchaseOrder[]
+  inventoryItems InventoryItem[]
+}
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  tenantId    String
+  supplierId  String
+  status      String   @default("draft") // draft, sent, received, cancelled
+  totalAmount Float    @default(0)
+  notes       String?
+  orderDate   DateTime @default(now())
+  receiveDate DateTime?
+  createdAt   DateTime @default(now())
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id])
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  items    PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              String @id @default(uuid())
+  purchaseOrderId String
+  inventoryItemId String
+  quantity        Float
+  unitPrice       Float
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  tenantId    String
+  roomId      String
+  guestId     String?
+  guestName   String // Store name directly for quick view
+  checkIn     DateTime
+  checkOut    DateTime
+  status      String   @default("confirmed") // confirmed, checked_in, checked_out, cancelled
+  totalPrice  Float
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  room   Room   @relation(fields: [roomId], references: [id])
+  guest  Guest? @relation(fields: [guestId], references: [id])
+}
+
+model OrderItem {
+  id            String  @id @default(uuid())
+  orderId       String
+  menuItemId    String
+  name          String
+  price         Float
+  quantity      Int     @default(1)
+  subtotal      Float
+  notes         String?
+  kitchenStatus String  @default("PENDING")
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  orderId   String
+  method    String
+  amount    Float
+  reference String?
+  roomId    String?
+  paidAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+  room   Room?  @relation(fields: [roomId], references: [id])
+  shiftId String?
+  shift   Shift? @relation(fields: [shiftId], references: [id])
+}
+
+model Shift {
+  id             String    @id @default(uuid())
+  tenantId       String
+  cashierId      String
+  startTime      DateTime  @default(now())
+  endTime        DateTime?
+  startingFloat  Float     @default(0)
+  expectedCash   Float     @default(0)
+  actualCash     Float?
+  cardTotal      Float     @default(0)
+  mpesaTotal     Float     @default(0)
+  notes          String?
+  status         String    @default("OPEN") // OPEN, CLOSED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  cashier        User      @relation(fields: [cashierId], references: [id])
+  orders         Order[]
+  payments       Payment[]
+}
+
+model RoomCharge {
+  id        String    @id @default(uuid())
+  tenantId  String
+  roomId    String
+  orderId   String
+  amount    Float
+  isSettled Boolean   @default(false)
+  settledAt DateTime?
+  createdAt DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  room   Room   @relation(fields: [roomId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+}
+
+model InventoryItem {
+  id                String   @id @default(uuid())
+  tenantId          String
+  name              String
+  sku               String?
+  currentStock      Float    @default(0)
+  lowStockThreshold Float    @default(10)
+  unit              String   @default("units")
+  costPrice         Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  ingredients  MenuItemIngredient[]
+  transactions StockTransaction[]
+  supplierId   String?
+  supplier     Supplier?            @relation(fields: [supplierId], references: [id])
+  poItems      PurchaseOrderItem[]
+
+  @@unique([tenantId, name])
+}
+
+model MenuItemIngredient {
+  id              String @id @default(uuid())
+  menuItemId      String
+  inventoryItemId String
+  quantity        Float
+
+  menuItem      MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+}
+
+model StockTransaction {
+  id              String   @id @default(uuid())
+  tenantId        String
+  inventoryItemId String
+  userId          String?
+  type            String
+  quantity        Float
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  user          User?         @relation(fields: [userId], references: [id])
+}
+
+model Guest {
+  id            String   @id @default(uuid())
+  tenantId      String
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  orders       Order[]
+  transactions LoyaltyTransaction[]
+  bookings     Booking[]
+}
+
+model LoyaltyTransaction {
+  id        String   @id @default(uuid())
+  tenantId  String
+  guestId   String
+  orderId   String?
+  points    Int
+  type      String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  guest  Guest  @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  tenantId  String
+  channel   String   @default("general")
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+}
+
+// F-9: Per-user, per-channel read tracking
+model UserChannelRead {
+  id        String   @id @default(uuid())
+  userId    String
+  channel   String
+  lastReadAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel])
+}

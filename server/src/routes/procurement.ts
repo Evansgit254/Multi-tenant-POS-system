@@ -1,0 +1,259 @@
+import { Router, Request, Response } from 'express';
+import prisma from '../lib/prisma';
+import { authenticate, scopeTenant, authorize } from '../middleware/auth';
+
+const router = Router({ mergeParams: true });
+// FORENSIC GAP FIX: Require manager or admin role to manage procurement
+router.use(authenticate, scopeTenant, authorize('hotel_admin', 'manager'));
+
+// --- Suppliers ---
+
+router.get('/suppliers', async (req: any, res) => {
+  try {
+    const { tenantId } = req.params;
+    const suppliers = await prisma.supplier.findMany({
+      where: { tenantId }
+    });
+    res.json(suppliers);
+  } catch (error) {
+    console.error('Failed to fetch suppliers:', error);
+    res.status(500).json({ error: 'Failed to fetch suppliers' });
+  }
+});
+
+router.post('/suppliers', async (req: any, res) => {
+  try {
+    const { tenantId } = req.params;
+    const { name, contact, email, phone, address } = req.body;
+
+    const supplier = await prisma.supplier.create({
+      data: { tenantId, name, contact, email, phone, address }
+    });
+    res.json(supplier);
+  } catch (error) {
+    console.error('Failed to create supplier:', error);
+    res.status(500).json({ error: 'Failed to create supplier' });
+  }
+});
+
+router.patch('/suppliers/:id', async (req: any, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    const { name, contact, email, phone, address } = req.body;
+
+    const supplier = await prisma.supplier.update({
+      where: { id, tenantId },
+      data: { name, contact, email, phone, address }
+    });
+    res.json(supplier);
+  } catch (error) {
+    console.error('Failed to update supplier:', error);
+    res.status(500).json({ error: 'Failed to update supplier' });
+  }
+});
+
+// GAP #7 FIX: Guard supplier deletion — check for linked POs first
+router.delete('/suppliers/:id', async (req: any, res) => {
+  try {
+    const { tenantId, id } = req.params;
+
+    const linkedPOs = await prisma.purchaseOrder.count({
+      where: { supplierId: id, tenantId }
+    });
+
+    if (linkedPOs > 0) {
+      return res.status(400).json({
+        error: `Cannot delete supplier — they have ${linkedPOs} purchase order(s) on record. Archive or reassign the orders first.`
+      });
+    }
+
+    await prisma.supplier.delete({ where: { id, tenantId } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete supplier:', error);
+    res.status(500).json({ error: 'Failed to delete supplier' });
+  }
+});
+
+// --- Purchase Orders ---
+
+router.get('/purchase-orders', async (req: any, res) => {
+  try {
+    const { tenantId } = req.params;
+    const pos = await prisma.purchaseOrder.findMany({
+      where: { tenantId },
+      include: {
+        supplier: true,
+        items: {
+          include: { inventoryItem: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(pos);
+  } catch (error) {
+    console.error('Failed to fetch purchase orders:', error);
+    res.status(500).json({ error: 'Failed to fetch purchase orders' });
+  }
+});
+
+router.post('/purchase-orders', async (req: any, res) => {
+  try {
+    const { tenantId } = req.params;
+    const { supplierId, items, notes } = req.body;
+
+    const totalAmount = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
+
+    const po = await prisma.purchaseOrder.create({
+      data: {
+        tenantId,
+        supplierId,
+        notes,
+        totalAmount,
+        status: 'draft',
+        items: {
+          create: items.map((item: any) => ({
+            inventoryItemId: item.inventoryItemId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice
+          }))
+        }
+      },
+      include: {
+        supplier: true,
+        items: { include: { inventoryItem: true } }
+      }
+    });
+    
+    res.json(po);
+  } catch (error) {
+    console.error('Failed to create purchase order:', error);
+    res.status(500).json({ error: 'Failed to create purchase order' });
+  }
+});
+
+// GAP #6 FIX: Allow editing a PO while it's still in 'draft' status
+router.patch('/purchase-orders/:id', async (req: any, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    const { supplierId, notes, items } = req.body;
+
+    const existing = await prisma.purchaseOrder.findUnique({ where: { id, tenantId } });
+    if (!existing) return res.status(404).json({ error: 'Purchase Order not found' });
+    if (existing.status !== 'draft') {
+      return res.status(400).json({ error: `Cannot edit a PO with status '${existing.status}'. Only draft POs can be modified.` });
+    }
+
+    // Recalculate total if items provided
+    let totalAmount = existing.totalAmount;
+    if (items && Array.isArray(items)) {
+      totalAmount = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
+
+      // Replace all line items atomically
+      await prisma.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: id } });
+      await prisma.purchaseOrderItem.createMany({
+        data: items.map((item: any) => ({
+          purchaseOrderId: id,
+          inventoryItemId: item.inventoryItemId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        }))
+      });
+    }
+
+    const po = await prisma.purchaseOrder.update({
+      where: { id, tenantId },
+      data: { 
+        ...(supplierId ? { supplierId } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+        totalAmount
+      },
+      include: {
+        supplier: true,
+        items: { include: { inventoryItem: true } }
+      }
+    });
+
+    res.json(po);
+  } catch (error) {
+    console.error('Failed to update purchase order:', error);
+    res.status(500).json({ error: 'Failed to update purchase order' });
+  }
+});
+
+router.patch('/purchase-orders/:id/status', async (req: any, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    const { status } = req.body;
+
+    const existingPo = await prisma.purchaseOrder.findUnique({
+      where: { id, tenantId },
+      include: { items: true }
+    });
+
+    if (!existingPo) return res.status(404).json({ error: 'PO not found' });
+
+    const po = await prisma.purchaseOrder.update({
+      where: { id, tenantId },
+      data: { 
+        status,
+        receiveDate: status === 'received' ? new Date() : undefined
+      },
+      include: {
+        supplier: true,
+        items: { include: { inventoryItem: true } }
+      }
+    });
+
+    // If marked as received, update inventory stock
+    if (status === 'received' && existingPo.status !== 'received') {
+      for (const item of po.items) {
+        await prisma.inventoryItem.update({
+          where: { id: item.inventoryItemId },
+          data: {
+            currentStock: { increment: item.quantity }
+          }
+        });
+
+        await prisma.stockTransaction.create({
+          data: {
+            tenantId,
+            inventoryItemId: item.inventoryItemId,
+            userId: req.user?.id,
+            type: 'IN',
+            quantity: item.quantity,
+            notes: `Received PO: ${po.id}`
+          }
+        });
+      }
+    } else if (existingPo.status === 'received' && status !== 'received') {
+      // SECURITY GAP FIX: If marking a received PO back to draft/cancelled, reverse the stock!
+      for (const item of po.items) {
+        await prisma.inventoryItem.update({
+          where: { id: item.inventoryItemId },
+          data: {
+            currentStock: { decrement: item.quantity }
+          }
+        });
+
+        await prisma.stockTransaction.create({
+          data: {
+            tenantId,
+            inventoryItemId: item.inventoryItemId,
+            userId: req.user?.id,
+            type: 'OUT',
+            quantity: item.quantity,
+            notes: `Reversed PO: ${po.id} (Status changed to ${status})`
+          }
+        });
+      }
+    }
+
+    res.json(po);
+  } catch (error) {
+    console.error('Failed to update PO status:', error);
+    res.status(500).json({ error: 'Failed to update PO status' });
+  }
+});
+
+export default router;

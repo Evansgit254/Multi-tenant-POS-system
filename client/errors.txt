@@ -1,0 +1,43 @@
+src/views/Rooms.tsx(207,164): error TS1127: Invalid character.
+src/views/Rooms.tsx(207,182): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(207,183): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(207,184): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/views/Rooms.tsx(217,161): error TS1127: Invalid character.
+src/views/Rooms.tsx(217,295): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(217,296): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(217,297): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/views/Rooms.tsx(219,25): error TS17002: Expected corresponding JSX closing tag for 'div'.
+src/views/Rooms.tsx(224,19): error TS1005: ')' expected.
+src/views/Rooms.tsx(225,18): error TS1005: '}' expected.
+src/views/Rooms.tsx(226,15): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(226,17): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(229,9): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(230,7): error TS1109: Expression expected.
+src/views/Rooms.tsx(230,8): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(291,11): error TS2657: JSX expressions must have one parent element.
+src/views/Rooms.tsx(302,37): error TS1127: Invalid character.
+src/views/Rooms.tsx(306,19): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(306,20): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(307,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/views/Rooms.tsx(309,118): error TS1127: Invalid character.
+src/views/Rooms.tsx(309,301): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(309,302): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(309,303): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/views/Rooms.tsx(343,17): error TS1005: ')' expected.
+src/views/Rooms.tsx(344,15): error TS1109: Expression expected.
+src/views/Rooms.tsx(345,14): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(345,15): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(346,11): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(347,9): error TS1109: Expression expected.
+src/views/Rooms.tsx(348,7): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(348,8): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(352,9): error TS2657: JSX expressions must have one parent element.
+src/views/Rooms.tsx(374,78): error TS1127: Invalid character.
+src/views/Rooms.tsx(374,239): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(374,240): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/views/Rooms.tsx(374,241): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/views/Rooms.tsx(480,9): error TS1005: ',' expected.
+src/views/Rooms.tsx(480,15): error TS1109: Expression expected.
+src/views/Rooms.tsx(483,5): error TS1128: Declaration or statement expected.
+src/views/Rooms.tsx(484,3): error TS1109: Expression expected.
+src/views/Rooms.tsx(485,1): error TS1128: Declaration or statement expected.

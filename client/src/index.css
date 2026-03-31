@@ -1,0 +1,319 @@
+:root {
+  /* Core Brand Colors (Precise Alignment with POS Design) */
+  --accent: #b8860b;             /* Elegant Muted Gold */
+  --accent-soft: rgba(184, 134, 11, 0.1);
+  --accent-glow: rgba(184, 134, 11, 0.25);
+  --accent-border: rgba(184, 134, 11, 0.4);
+  
+  --bg-sidebar: #064e3b;          /* Deep Emerald Sidebar */
+  --text-sidebar: #ffffff;
+  --text-sidebar-muted: rgba(255, 255, 255, 0.7);
+  
+  --bg-base: #f8f9fa;             /* Light Grayish/Off-White Background */
+  --bg-elevated: #ffffff;
+  --bg-deep: #f1f3f5;
+  
+  --text-primary: #1a1d23;
+  --text-primary: #1a1d23;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;            /* Gray-500 — readable but understated */
+  
+  --bg-inverted: #1a1d23;
+  --text-inverted: #ffffff;
+  
+  --border: rgba(0, 0, 0, 0.08);
+  --border-glass: rgba(255, 255, 255, 0.4);
+  
+  /* Modern Utilities */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  --glass-blur: blur(12px);
+}
+
+.dark {
+  --bg-base: #0f172a;             /* Slate 900 Background */
+  --bg-elevated: #1e293b;         /* Slate 800 Elevated */
+  --bg-deep: #020617;             /* Slate 950 Deep */
+  
+  --text-primary: #f8fafc;        /* Slate 50 */
+  --text-primary: #f8fafc;        /* Slate 50 */
+  --text-secondary: #94a3b8;      /* Slate 400 */
+  --text-muted: #64748b;          /* Slate 500 */
+  
+  --bg-inverted: #f8fafc;         /* Slate 50 */
+  --text-inverted: #0f172a;       /* Slate 900 Background */
+  
+  --border: rgba(255, 255, 255, 0.1);
+  --border-glass: rgba(255, 255, 255, 0.05);
+
+  /* Preserve accent and sidebar as they are highly branded */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Global Table Header Styles ──────────────────────────────────
+   Fixes faint column names across ALL tables in the system.
+   Inline styles on <th> use var(--text-muted) which is too
+   light. This rule overrides that with a strong, readable style.
+──────────────────────────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: rgba(6, 78, 59, 0.06); /* Subtle emerald tint matching sidebar brand */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.dark thead {
+  background: rgba(6, 78, 59, 0.18);
+}
+
+thead th {
+  color: var(--text-primary) !important;  /* Always full-contrast, overrides --text-muted */
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  padding: 1rem 1.5rem !important;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--accent-border);
+  text-shadow: none;
+}
+
+/* ── Core App Layout ── */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-container .sidebar {
+  width: 280px;
+  min-width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 2.5rem;
+  background: var(--bg-base);
+}
+
+/* Glassmorphic Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-sm);
+}
+
+.bg-elevated {
+  background: var(--bg-elevated);
+}
+
+.card {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  background: #a67c0a;
+  box-shadow: 0 8px 20px var(--accent-glow);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+  background: var(--bg-deep);
+  border-color: var(--text-muted);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* Sidebar Specific */
+.sidebar {
+  background: var(--bg-sidebar);
+  color: var(--text-sidebar);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 2rem 1rem;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+  margin-bottom: 2.5rem;
+  padding: 0 1rem;
+}
+
+.sidebar-section-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  margin: 2rem 1rem 0.75rem;
+  color: var(--text-sidebar-muted);
+  opacity: 0.6;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  color: var(--text-sidebar-muted);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-link:hover, .sidebar-link.active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1rem;
+}
+
+/* Scrollbar Refinement */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-border-red {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.2); border-color: rgba(244, 63, 94, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(244, 63, 94, 0); border-color: rgba(244, 63, 94, 1); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); border-color: rgba(244, 63, 94, 0.4); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

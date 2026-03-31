@@ -1,0 +1,7 @@
+{
+    "python.testing.pytestArgs": [
+        "POS Design"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

@@ -1,0 +1,102 @@
+name: ServePoint CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        
+      - name: TypeScript Compile Check
+        run: npx tsc --noEmit
+        
+      - name: Run Tests
+        run: npm run test --if-present
+        
+  frontend-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Lint Code
+        run: npm run lint
+        
+      - name: Build UI Bundle
+        run: npm run build
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Init Server Dependencies
+        working-directory: ./server
+        run: npm install
+
+      - name: Setup Test Database
+        working-directory: ./server
+        env:
+          DATABASE_URL: "file:./dev.db"
+        run: |
+          npx prisma generate
+          npx prisma db push --skip-generate
+
+      - name: Start Backend
+        working-directory: ./server
+        env:
+          DATABASE_URL: "file:./dev.db"
+          JWT_SECRET: "ci-test-secret"
+          PORT: 3000
+        run: npm run dev &
+        
+      - name: Wait for Backend
+        run: npx wait-on tcp:3000
+
+      - name: Init Client Dependencies
+        working-directory: ./client
+        run: npm install
+
+      - name: Install Playwright Browsers
+        working-directory: ./client
+        run: npx playwright install --with-deps
+
+      - name: Run E2E Integration Suite
+        working-directory: ./client
+        env:
+          VITE_API_URL: "http://localhost:3000"
+        run: npx playwright test
