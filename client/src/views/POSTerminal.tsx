@@ -73,7 +73,7 @@ const POSTerminal: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catsRes, itemsRes, guestsRes, tablesRes, roomsRes, shiftRes] = await Promise.all([
+        const [catsRes, itemsRes, guestsRes, tablesRes, roomsRes, shiftRes, mpesaRes] = await Promise.all([
           api.get(`/tenants/${user?.tenantId}/menu/categories`),
           api.get(`/tenants/${user?.tenantId}/menu/items?available=true`),
           api.get(`/tenants/${user?.tenantId}/guests`),

@@ -5,7 +5,7 @@ import api from '../api';
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight,
   CheckCircle, Loader2, Users, DollarSign, Activity,
-  Sparkles, Clock
+  Sparkles, Clock, AlertCircle
 } from 'lucide-react';
 
 const RANGES = ['Yesterday', 'Today', 'Week', 'Month', 'Year'];
@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const lineData: number[] = stats?.dailySales || Array(13).fill(0);
+  const lineData: number[] = stats?.revenueByDay?.length ? stats.revenueByDay.map((d: any) => d.revenue) : Array(13).fill(0);
   const maxSale = Math.max(...lineData, 1000);
   const yScale = maxSale * 1.2;
 
@@ -212,7 +212,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.75rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
         <div style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem' }}>
            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem' }}>Top Performers</h3>
            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -223,8 +223,8 @@ const Dashboard: React.FC = () => {
                         {emp.name.charAt(0)}
                       </div>
                       <div>
-                        <p style={{ fontWeight: 800, fontSize: '1.05rem' }}>{emp.name}</p>
-                        <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>{emp.orders} orders processed</p>
+                        <p style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-primary)' }}>{emp.name}</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{emp.orders} orders processed</p>
                       </div>
                    </div>
                    <span style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--accent)' }}>{tenant?.currency} {Math.round(emp.sales).toLocaleString()}</span>
@@ -240,16 +240,42 @@ const Dashboard: React.FC = () => {
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                       <span style={{ fontSize: '2.25rem' }}>{dish.emoji || '🥘'}</span>
-                      <div>
-                        <p style={{ fontWeight: 800, fontSize: '1.05rem' }}>{dish.name}</p>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{dish.name}</p>
                         <div style={{ width: '120px', height: '6px', background: 'var(--bg-deep)', borderRadius: '3px', marginTop: '6px', overflow: 'hidden' }}>
                            <div style={{ height: '100%', width: `${(dish.count / Math.max(...dishes.map((d: any) => d.count))) * 100}%`, background: 'var(--accent)' }} />
                         </div>
                       </div>
                    </div>
-                   <span style={{ fontWeight: 900, fontSize: '1.5rem' }}>{dish.count}</span>
+                   <span style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--text-primary)' }}>{dish.count}</span>
                 </div>
               ))}
+           </div>
+        </div>
+
+        <div style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem' }}>
+           <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
+             <AlertCircle size={20} /> Low Stock Alerts
+           </h3>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {(stats?.lowStock || []).slice(0, 3).map((item: any, i: number) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', borderRadius: '20px', background: '#fef2f2', border: '1px solid #fecaca' }}>
+                   <div style={{ minWidth: 0 }}>
+                     <p style={{ fontWeight: 800, fontSize: '1.05rem', color: '#991b1b', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{item.name}</p>
+                     <p style={{ fontSize: '0.85rem', color: '#dc2626', fontWeight: 700, marginTop: '2px' }}>Threshold: {item.lowStockThreshold} {item.unit}</p>
+                   </div>
+                   <div style={{ textAlign: 'right', flexShrink: 0, paddingLeft: '1rem' }}>
+                     <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#dc2626', letterSpacing: '0.05em' }}>Current</p>
+                     <span style={{ fontWeight: 900, fontSize: '1.5rem', color: '#991b1b', lineHeight: 1 }}>{item.currentStock}</span>
+                   </div>
+                </div>
+              ))}
+              {(!stats?.lowStock || stats?.lowStock.length === 0) && (
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#10b981', fontWeight: 700, background: '#f0fdf4', borderRadius: '20px', border: '1px solid #bbf7d0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                   <CheckCircle size={32} />
+                   <p>All inventory items are sufficiently stocked.</p>
+                </div>
+              )}
            </div>
         </div>
       </div>

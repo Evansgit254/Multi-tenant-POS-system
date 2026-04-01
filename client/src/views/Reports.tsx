@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Download, Search, Calendar, Loader2, Clock,
   BarChart4, FileText, Receipt, PackageSearch, TrendingUp,
-  Award, DollarSign, ShoppingCart, Tag, ArrowUpRight
+  Award, DollarSign, ShoppingCart, Tag, ArrowUpRight, X
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -52,6 +53,7 @@ const Reports: React.FC = () => {
   const [taxReport, setTaxReport] = useState<TaxReport | null>(null);
   const [inventoryVal, setInventoryVal] = useState<InventoryValuation | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!user?.tenantId) return;
@@ -243,7 +245,7 @@ const Reports: React.FC = () => {
                       <tr><td colSpan={6} style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600 }}>No orders found.</td></tr>
                     ) : (
                       filteredOrders.map((order: Order) => (
-                        <tr key={order.id} style={{ borderTop: '1px solid var(--border)' }}>
+                        <tr key={order.id} onClick={() => setSelectedOrder(order)} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'} style={{ borderTop: '1px solid var(--border)', cursor: 'pointer', transition: 'background-color 0.2s' }}>
                           <td style={{ padding: '1rem 1.5rem' }}><span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{order.orderNumber}</span></td>
                           <td style={{ padding: '1rem 1.5rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.8rem' }}>
@@ -381,6 +383,53 @@ const Reports: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Order Details Modal */}
+      {selectedOrder && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '32rem', maxHeight: '90vh', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.3s ease-out', padding: 0 }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', borderRadius: '16px 16px 0 0' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Receipt size={20} color="var(--accent)" /> Order {selectedOrder.orderNumber}
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  {new Date(selectedOrder.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <button onClick={() => setSelectedOrder(null)} style={{ background: 'var(--bg-deep)', border: 'none', width: '2rem', height: '2rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', cursor: 'pointer' }}><X size={16} /></button>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: 'var(--bg-deep)' }}>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>Type: {selectedOrder.orderType.replace('_', ' ')}</span>
+                <span style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>Status: {selectedOrder.status}</span>
+                <span style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>Agent: {selectedOrder.cashier?.name}</span>
+              </div>
+              
+              <p style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>Folio Items</p>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                {selectedOrder.items.map((item, idx) => (
+                  <div key={idx} style={{ padding: '1rem 1.25rem', borderBottom: idx < selectedOrder.items.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{item.name}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem', fontWeight: 600 }}>Qty: {item.quantity}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'var(--bg-card)', borderRadius: '0 0 16px 16px' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                 <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net Total</span>
+                 <span style={{ fontWeight: 900, color: 'var(--accent)', fontSize: '1.75rem', lineHeight: 1, letterSpacing: '-0.02em' }}>{tenant?.currency || 'KES'} {Number(selectedOrder.total).toLocaleString()}</span>
+               </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
