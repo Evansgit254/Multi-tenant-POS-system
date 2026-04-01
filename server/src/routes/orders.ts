@@ -12,7 +12,11 @@ router.post(
   authorize('hotel_admin', 'manager', 'cashier'), // FORENSIC GAP FIX: Restrict to operational roles
   [
     body('items').isArray({ min: 1 }),
+    body('items.*.menuItemId').isString().notEmpty(),
+    body('items.*.quantity').isInt({ min: 1 }), // FATAL GAP FIX: Prevent negative quantity stock manipulation
     body('orderType').isIn(['dine_in', 'takeaway', 'room_service']),
+    body('discountFixed').optional().isFloat({ min: 0 }),
+    body('discountPercent').optional().isFloat({ min: 0, max: 100 }),
   ],
   async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
@@ -361,10 +365,19 @@ router.put('/:id/status', async (req: Request, res: Response): Promise<void> => 
 // POST /api/tenants/:tenantId/orders/:id/payments (For Split Bills / Partial Payments)
 // GAP #5 FIX: normalized status to lowercase 'completed'
 // GAP #10 FIX: Overpayment guard added
-router.post('/:id/payments', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { tenantId, id } = req.params;
-    const { amount, method } = req.body;
+router.post(
+  '/:id/payments',
+  [
+    body('amount').isFloat({ min: 0.01 }), // DATA GAP FIX: Block negative or zero payments
+    body('method').isString().notEmpty()
+  ],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) { res.status(400).json({ errors: errors.array() }); return; }
+
+    try {
+      const { tenantId, id } = req.params;
+      const { amount, method } = req.body;
 
     const activeShift = await prisma.shift.findFirst({
       where: { cashierId: (req as any).user.id, tenantId, status: 'OPEN' }
