@@ -12,7 +12,11 @@ const router = Router();
 // F-15 FIX: Rate limit login attempts to prevent brute-force attacks
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'test' ? 1000 : 5, // 5 attempts per IP outside of tests
+  max: 5, // 5 attempts per IP
+  skip: (req) => {
+    const ip = req.ip || req.socket.remoteAddress;
+    return process.env.NODE_ENV === 'test' || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+  },
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
