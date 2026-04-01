@@ -84,8 +84,8 @@ router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_STOCK), async (req, re
     const data = schema.parse(req.body);
 
     // If currentStock is explicitly passed, log an adjustment transaction
-    const original = await prisma.inventoryItem.findUnique({ where: { id, tenantId } });
-    if (!original) { (res as any).status(404).json({ error: 'Item not found' }); return; }
+    const original = await prisma.inventoryItem.findFirst({ where: { id, tenantId } });
+    if (!original) { return void res.status(404).json({ error: 'Item not found' }); }
 
     const item = await prisma.inventoryItem.update({
       where: { id, tenantId },

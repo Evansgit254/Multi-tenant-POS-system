@@ -24,7 +24,7 @@ beforeAll(async () => {
   const tenant = await prisma.tenant.create({ data: { name: 'Reports Tenant', slug: 'rep-tenant-' + Date.now() } });
   tenantId = tenant.id;
 
-  const user = await prisma.user.create({ data: { tenantId, name: 'Manager', email: 'mgr@rep.com', role: 'manager' } });
+  const user = await prisma.user.create({ data: { tenantId, name: 'Admin', email: 'req@rep.com', role: 'hotel_admin' } });
   cashierId = user.id;
   token = jwt.sign({ id: user.id, tenantId, role: user.role }, process.env.JWT_SECRET || 'test-secret');
 

@@ -46,7 +46,7 @@ describe('Inventory Module Data Logic', () => {
   it('1. Successfully manually adjusts currentStock and logs StockTransaction', async () => {
     // Current stock is 10. Admin realized it's actually 20.
     const res = await request(app)
-      .put(`/api/tenants/${tenantId}/inventory/${inventoryItemId}`)
+      .patch(`/api/tenants/${tenantId}/inventory/${inventoryItemId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({
         currentStock: 20
@@ -70,11 +70,11 @@ describe('Inventory Module Data Logic', () => {
       .post(`/api/tenants/${tenantId}/inventory/${inventoryItemId}/adjust`)
       .set('Authorization', `Bearer ${token}`)
       .send({
-        type: 'WASTE',
+        type: 'OUT',
         quantity: -30
       });
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
     expect(res.body.error).toContain('negative stock');
   });
 
