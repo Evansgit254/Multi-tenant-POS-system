@@ -12,3 +12,5 @@ dev.db-journal
 coverage/
 playwright-report/
 test-results/
+*.pdf
+*.html
