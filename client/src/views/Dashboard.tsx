@@ -5,7 +5,7 @@ import api from '../api';
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight,
   CheckCircle, Loader2, Users, DollarSign, Activity,
-  Sparkles, AlertTriangle, Wallet, Smartphone, Target
+  Sparkles, AlertTriangle, Wallet, Smartphone, Target, Clock, AlertCircle, CreditCard
 } from 'lucide-react';
 
 const RANGES = ['Yesterday', 'Today', 'Week', 'Month', 'Year'];
