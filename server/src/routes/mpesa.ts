@@ -168,13 +168,13 @@ router.post('/webhook', async (req: Request, res: Response): Promise<void> => {
       where: { tenantId, orderNumber: accountRef }
     });
 
-    if (order && order.status !== 'completed') {
+    if (order && order.status !== 'COMPLETED') {
       await prisma.payment.create({
         data: { tenantId, orderId: order.id, method: 'mpesa', amount: Number(amountPaid), reference: mpesaCode }
       });
       await prisma.order.update({
         where: { id: order.id },
-        data: { status: 'completed' }
+        data: { status: 'COMPLETED' }
       });
       console.log(`✅ M-Pesa confirmed: ${mpesaCode} for order ${accountRef}`);
     }

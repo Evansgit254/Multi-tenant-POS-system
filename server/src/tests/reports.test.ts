@@ -38,7 +38,7 @@ beforeAll(async () => {
   // Create Order 1: Fully Paid and Completed (1000 KES + 160 KES tax = 1160 KES, Paid via Card)
   const order1 = await prisma.order.create({
     data: {
-      tenantId, cashierId, shiftId, orderNumber: 'REP-1', orderType: 'dine_in', status: 'completed',
+      tenantId, cashierId, shiftId, orderNumber: 'REP-1', orderType: 'dine_in', status: 'COMPLETED',
       subtotal: 1000, taxAmount: 160, total: 1160, discount: 0,
     }
   });
@@ -59,7 +59,7 @@ beforeAll(async () => {
   // The 'discount' column stores the aggregation (600).
   const order3 = await prisma.order.create({
     data: {
-      tenantId, cashierId, shiftId, orderNumber: 'REP-3', orderType: 'dine_in', status: 'completed',
+      tenantId, cashierId, shiftId, orderNumber: 'REP-3', orderType: 'dine_in', status: 'COMPLETED',
       subtotal: 1000, taxAmount: 160, discount: 600, discountFixed: 100, discountPercent: 50, total: 560
     }
   });

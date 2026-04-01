@@ -113,9 +113,14 @@ router.post(
     try {
       const item = await prisma.menuItem.create({
         data: {
-          ...req.body,
+          categoryId: req.body.categoryId,
+          name: req.body.name,
+          description: req.body.description,
           price: Number(req.body.price),
-          tenantId: req.params.tenantId
+          tenantId: req.params.tenantId,
+          ingredients: req.body.ingredients && req.body.ingredients.length > 0
+            ? { create: req.body.ingredients.map((i: any) => ({ inventoryItemId: i.inventoryItemId, quantity: Number(i.quantity) })) }
+            : undefined
         }
       });
       res.status(201).json(item);

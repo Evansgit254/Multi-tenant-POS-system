@@ -24,13 +24,25 @@ router.get('/suppliers', async (req: any, res) => {
 router.post('/suppliers', async (req: any, res) => {
   try {
     const { tenantId } = req.params;
-    const { name, contact, email, phone, address } = req.body;
+    const { z } = await import('zod');
+    const schema = z.object({
+      name:    z.string().min(1, 'Supplier name is required'),
+      contact: z.string().optional(),
+      email:   z.string().email().optional().or(z.literal('')),
+      phone:   z.string().optional(),
+      address: z.string().optional(),
+    });
+    const data = schema.parse(req.body);
 
     const supplier = await prisma.supplier.create({
-      data: { tenantId, name, contact, email, phone, address }
+      data: { tenantId, ...data }
     });
-    res.json(supplier);
-  } catch (error) {
+    res.status(201).json(supplier);
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      res.status(400).json({ error: error.errors[0]?.message || 'Invalid supplier data' });
+      return;
+    }
     console.error('Failed to create supplier:', error);
     res.status(500).json({ error: 'Failed to create supplier' });
   }

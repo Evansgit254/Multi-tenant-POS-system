@@ -9,8 +9,7 @@ const router = Router({ mergeParams: true });
 router.use(authenticate, scopeTenant, requirePermission(PERMISSIONS.VIEW_STOCK));
 
 // All roles that can perform write operations
-const WRITE_ROLES = ['admin', 'manager', 'hotel_admin', 'cashier'];
-const ADMIN_ROLES = ['admin', 'manager', 'hotel_admin'];
+
 
 // GET /api/tenants/:tenantId/inventory
 // List all inventory items

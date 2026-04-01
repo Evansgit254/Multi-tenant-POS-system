@@ -1,14 +1,28 @@
 import { Router, Response, Request } from 'express';
 import { body, validationResult } from 'express-validator';
+import rateLimit from 'express-rate-limit';
 import prisma from '../lib/prisma';
 import { authenticate, scopeTenant, authorize, requirePermission, PERMISSIONS } from '../middleware/auth';
 
 const router = Router({ mergeParams: true });
 router.use(authenticate, scopeTenant);
 
+// Rate limiter: max 5 orders per 10 seconds per user — prevents cashier account abuse
+const orderLimiter = rateLimit({
+  windowMs: 10 * 1000,
+  max: 5,
+  skip: () => process.env.NODE_ENV === 'test',
+  keyGenerator: (req: any) => req.user?.id ?? 'anonymous',
+  message: { error: 'Too many orders submitted. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false, // Disable IPv6 helper warning since we use userId not IP
+});
+
 // POST /api/tenants/:tenantId/orders
 router.post(
   '/',
+  orderLimiter, // Rate guard: 5 orders / 10s per user
   authorize('hotel_admin', 'manager', 'cashier'), // FORENSIC GAP FIX: Restrict to operational roles
   [
     body('items').isArray({ min: 1 }),
@@ -409,12 +423,12 @@ router.post(
       }
     });
 
-    // Check if fully paid — use lowercase 'completed'
+    // Check if fully paid — normalize status to uppercase 'COMPLETED'
     const totalPaid = alreadyPaid + Number(amount);
     if (totalPaid >= order.total) {
       await prisma.order.update({
         where: { id, tenantId },
-        data: { status: 'completed' }
+        data: { status: 'COMPLETED' }
       });
     }
 

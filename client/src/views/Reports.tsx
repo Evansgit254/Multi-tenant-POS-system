@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Download, Search, Calendar, Loader2, Clock,
+  Download, Search, Calendar, Loader2, Clock, Activity,
   BarChart4, FileText, Receipt, PackageSearch, TrendingUp,
   Award, DollarSign, ShoppingCart, Tag, ArrowUpRight, X
 } from 'lucide-react';
@@ -33,7 +33,16 @@ interface AnalyticsData {
   revenueByMethod: Record<string, number>;
 }
 
-type Tab = 'visual' | 'history' | 'shift' | 'taxes' | 'inventory';
+interface PnlReport {
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  netMargin: number;
+  totalAssetsOnHand: number;
+  dailyTrend: { date: string, revenue: number, expenses: number, profit: number }[];
+}
+
+type Tab = 'visual' | 'history' | 'shift' | 'taxes' | 'inventory' | 'pnl';
 
 const Reports: React.FC = () => {
   const { user, tenant } = useAuth();
@@ -53,6 +62,7 @@ const Reports: React.FC = () => {
   const [taxReport, setTaxReport] = useState<TaxReport | null>(null);
   const [inventoryVal, setInventoryVal] = useState<InventoryValuation | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [pnlReport, setPnlReport] = useState<PnlReport | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -64,6 +74,9 @@ const Reports: React.FC = () => {
         if (tab === 'visual') {
           const res = await api.get(`/tenants/${user.tenantId}/analytics/dashboard?range=month`);
           setAnalyticsData(res.data);
+        } else if (tab === 'pnl') {
+          const res = await api.get(`/tenants/${user.tenantId}/reports/pnl?days=30`);
+          setPnlReport(res.data);
         } else if (tab === 'history') {
           const res = await api.get(`/tenants/${user.tenantId}/reports/orders${query}`);
           setOrders(res.data);
@@ -86,9 +99,28 @@ const Reports: React.FC = () => {
     fetchData();
   }, [user?.tenantId, dateFrom, dateTo, tab, showToast]);
 
-  const handleExportCSV = () => {
-    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tenants/${user?.tenantId}/reports/orders?from=${dateFrom}&to=${dateTo}&format=csv`;
-    window.open(url, '_blank');
+  const handleExportCSV = async () => {
+    try {
+      let endpoint = '';
+      if (tab === 'history') {
+        endpoint = `/tenants/${user?.tenantId}/reports/orders?from=${dateFrom}&to=${dateTo}&format=csv`;
+      } else if (tab === 'inventory') {
+        endpoint = `/tenants/${user?.tenantId}/reports/inventory-valuation?format=csv`;
+      }
+      
+      if (!endpoint) return;
+
+      const res = await api.get(endpoint, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', tab === 'history' ? `ServePoint-Orders-${dateFrom}.csv` : 'ServePoint-Inventory.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (err) {
+      showToast('Failed to download CSV', 'error');
+    }
   };
 
   const filteredOrders = orders.filter((o: Order) => 
@@ -113,9 +145,9 @@ const Reports: React.FC = () => {
           </p>
         </div>
         
-        {tab === 'history' && (
+        {(tab === 'history' || tab === 'inventory') && (
           <button onClick={handleExportCSV} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent)', borderColor: 'var(--accent-border)', background: 'var(--accent-soft)', fontWeight: 800 }}>
-            <Download size={18} /> Export Historical CSV
+            <Download size={18} /> {tab === 'history' ? 'Export Historical CSV' : 'Export Inventory CSV'}
           </button>
         )}
       </div>
@@ -124,6 +156,7 @@ const Reports: React.FC = () => {
       <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-elevated)', padding: '0.4rem', borderRadius: '16px', border: '1px solid var(--border)', width: 'fit-content', boxShadow: 'var(--shadow-sm)', overflowX: 'auto', maxWidth: '100%' }}>
         {[
           { id: 'visual', label: 'Overview Charts', icon: BarChart4 },
+          { id: 'pnl', label: 'Executive P&L', icon: Activity },
           { id: 'history', label: 'Transaction History', icon: FileText },
           { id: 'shift', label: 'Z-Reading / Shift', icon: Receipt },
           { id: 'taxes', label: 'Tax & Compliance', icon: TrendingUp },
@@ -147,7 +180,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* DATE FILTERS (Not shown for static tabs) */}
-      {tab !== 'inventory' && tab !== 'visual' && (
+      {tab !== 'inventory' && tab !== 'visual' && tab !== 'pnl' && (
         <div style={{ display: 'flex', gap: '1rem', padding: '1rem 1.5rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Date Range From</label>
@@ -167,6 +200,93 @@ const Reports: React.FC = () => {
         </div>
       ) : (
         <>
+          {/* TAB: EXECUTIVE PNL */}
+          {tab === 'pnl' && pnlReport && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.4s ease-out' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderLeft: '4px solid #10b981' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Inflow (30d)</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', marginTop: '0.5rem' }}>{tenant?.currency} {pnlReport.totalRevenue.toLocaleString()}</p>
+                </div>
+                
+                <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderLeft: '4px solid #f43f5e' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Outflow (30d)</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#f43f5e', marginTop: '0.5rem' }}>{tenant?.currency} {pnlReport.totalExpenses.toLocaleString()}</p>
+                </div>
+
+                <div className="card" style={{ padding: '1.5rem', background: pnlReport.netMargin > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)', borderColor: pnlReport.netMargin > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net Profit Margin</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: pnlReport.netMargin > 0 ? '#10b981' : '#f43f5e', marginTop: '0.5rem' }}>{Math.round(pnlReport.netMargin)}%</p>
+                </div>
+                
+                <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-elevated)' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cost of Goods (Assets on Hand)</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0ea5e9', marginTop: '0.5rem' }}>{tenant?.currency} {pnlReport.totalAssetsOnHand.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: '2rem', overflowX: 'auto' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Activity size={20} style={{ color: 'var(--accent)' }}/> 30-Day Revenue vs. Expenses
+                </h3>
+                
+                <div style={{ minWidth: '700px', height: '300px', position: 'relative', overflow: 'visible' }}>
+                  <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(1, pnlReport.dailyTrend.length - 1) * 40} 300`} preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                    {(() => {
+                      const maxVal = Math.max(1, ...pnlReport.dailyTrend.map(d => Math.max(d.revenue, d.expenses)));
+                      // Adjust to fit within SVG visually using 280 scale (leave 20px padding)
+                      const pointsRevenue = pnlReport.dailyTrend.map((d, i) => `${i * 40},${280 - (d.revenue / maxVal * 260)}`).join(' ');
+                      const pointsExpenses = pnlReport.dailyTrend.map((d, i) => `${i * 40},${280 - (d.expenses / maxVal * 260)}`).join(' ');
+                      
+                      const w = Math.max(0, (pnlReport.dailyTrend.length - 1) * 40);
+                      
+                      return (
+                        <>
+                          <defs>
+                            <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
+                              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                            </linearGradient>
+                            <linearGradient id="gradExp" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.3" />
+                              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+
+                          {/* Grid lines */}
+                          <line x1="0" y1="150" x2={w} y2="150" stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
+                          <line x1="0" y1="280" x2={w} y2="280" stroke="var(--border)" strokeWidth="1" />
+
+                          {/* Revenue Area & Line */}
+                          <polygon points={`0,280 ${pointsRevenue} ${w},280`} fill="url(#gradRev)" />
+                          <polyline points={pointsRevenue} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          
+                          {/* Expenses Area & Line */}
+                          <polygon points={`0,280 ${pointsExpenses} ${w},280`} fill="url(#gradExp)" />
+                          <polyline points={pointsExpenses} fill="none" stroke="#f43f5e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          
+                          {/* Axis labels */}
+                          {pnlReport.dailyTrend.map((d, i) => (
+                            i % 5 === 0 ? (
+                              <text key={i} x={i * 40} y="295" fontSize="10" fontWeight="700" fill="var(--text-secondary)" textAnchor="middle">
+                                {d.date.substring(5, 10)}
+                              </text>
+                            ) : null
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </svg>
+                </div>
+                <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#10b981' }}></div><span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Revenue (Cash In)</span></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></div><span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Expenses (Cash Out)</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB: VISUAL OVERVIEW */}
           {tab === 'visual' && analyticsData && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

@@ -23,6 +23,19 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
+    // NEW: Enforce Stateful Session Revocation
+    const jti = (decoded as any).jti;
+    if (jti) {
+      const session = await prisma.session.findUnique({
+        where: { token: jti },
+        select: { isActive: true }
+      });
+      if (!session || !session.isActive) {
+        res.status(401).json({ error: 'Session was revoked or expired.' });
+        return;
+      }
+    }
+
     req.user = decoded;
     next();
   } catch {

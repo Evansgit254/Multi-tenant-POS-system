@@ -43,11 +43,36 @@ router.get('/dashboard', async (req, res, next) => {
 
     const dateFilter = { gte: startDate, lte: endDate };
 
+    // ── Period-over-Period Delta Engine ──────────────────────────────────
+    // Mirror the window size exactly one period backwards
+    const periodMs = endDate.getTime() - startDate.getTime();
+    const prevEnd   = new Date(startDate.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - periodMs);
+    const prevFilter = { gte: prevStart, lte: prevEnd };
+
+    const [prevOrders, prevGuestCount] = await Promise.all([
+      prisma.order.findMany({
+        where: { tenantId, status: 'COMPLETED', createdAt: prevFilter },
+        select: { total: true }
+      }),
+      prisma.guest.count({ where: { tenantId, createdAt: prevFilter } })
+    ]);
+
+    const prevRevenue = prevOrders.reduce((s, o) => s + Number(o.total), 0);
+    const prevOrderCount = prevOrders.length;
+    const prevAvgTicket = prevOrderCount > 0 ? prevRevenue / prevOrderCount : 0;
+
+    const calcDelta = (curr: number, prev: number): number => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.round(((curr - prev) / prev) * 1000) / 10; // 1 decimal place
+    };
+    // ─────────────────────────────────────────────────────────────────────
+
     // GAP #9 FIX: Only count completed orders in revenue calculations
     const orders = await prisma.order.findMany({
       where: {
         tenantId,
-        status: 'completed',
+        status: 'COMPLETED',
         createdAt: dateFilter
       },
       include: {
@@ -58,9 +83,22 @@ router.get('/dashboard', async (req, res, next) => {
     });
 
     // Also fetch cancelled orders separately (for discounts context, not revenue)
-    const cancelledCount = await prisma.order.count({
-      where: { tenantId, status: 'cancelled', createdAt: dateFilter }
+    const cancelledOrders = await prisma.order.findMany({
+      where: { tenantId, status: 'CANCELLED', createdAt: dateFilter }
     });
+    const cancelledCount = cancelledOrders.length;
+    const cancelledValue = cancelledOrders.reduce((sum, o) => sum + Number(o.total || o.subtotal), 0);
+
+    // Live Occupancy Metrics
+    const totalTables = await prisma.table.count({ where: { tenantId } });
+    const activeTables = await prisma.table.count({ where: { tenantId, status: 'occupied' } });
+    const totalRooms = await prisma.room.count({ where: { tenantId } });
+    const activeRooms = await prisma.room.count({ where: { tenantId, status: 'OCCUPIED' } });
+    
+    const occupancy = {
+      tables: { total: totalTables, active: activeTables },
+      rooms: { total: totalRooms, active: activeRooms }
+    };
 
     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
     const totalOrders = orders.length;
@@ -121,7 +159,7 @@ router.get('/dashboard', async (req, res, next) => {
     const weeklyOrders = await prisma.order.findMany({
       where: { 
         tenantId, 
-        status: 'completed', // GAP #9 FIX: only completed orders
+        status: 'COMPLETED', // GAP #9 FIX: only completed orders
         createdAt: { gte: daysAgo } 
       },
       select: { total: true, createdAt: true }
@@ -150,7 +188,7 @@ router.get('/dashboard', async (req, res, next) => {
 
     // Revenue by payment method — FORENSIC GAP FIX: Do not include payments attached to cancelled orders
     const payments = await prisma.payment.findMany({ 
-      where: { tenantId, paidAt: dateFilter, order: { status: 'completed' } } 
+      where: { tenantId, paidAt: dateFilter, order: { status: 'COMPLETED' } } 
     });
     const revenueByMethod: Record<string, number> = {};
     payments.forEach(p => {
@@ -163,6 +201,8 @@ router.get('/dashboard', async (req, res, next) => {
       avgOrderValue,
       totalDiscounts,
       cancelledCount,
+      cancelledValue,
+      occupancy,
       newGuests,
       revenueDonut,
       bestEmployees,
@@ -171,7 +211,13 @@ router.get('/dashboard', async (req, res, next) => {
       revenueByDay,
       revenueByMethod,
       lowStock,
-      salesVelocity: { current: currentVelocity, previous: Array.from({length: 24}, (_, i) => ({ hour: i, count: 0 })) }
+      salesVelocity: { current: currentVelocity, previous: Array.from({length: 24}, (_, i) => ({ hour: i, count: 0 })) },
+      deltas: {
+        revenue:  calcDelta(totalRevenue,  prevRevenue),
+        orders:   calcDelta(totalOrders,   prevOrderCount),
+        avgTicket: calcDelta(avgOrderValue, prevAvgTicket),
+        newGuests: calcDelta(newGuests,    prevGuestCount)
+      }
     });
   } catch (error) {
     next(error);

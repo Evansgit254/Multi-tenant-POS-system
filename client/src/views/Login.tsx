@@ -69,10 +69,9 @@ const Login: React.FC = () => {
         login(token, user, tenant);
         navigate('/');
       } else if (view === 'register') {
-        const response = await api.post('/auth/register', { email, password, name, hotelName });
-        const { token, user, tenant } = response.data;
-        login(token, user, tenant);
-        navigate('/');
+        await api.post('/auth/register', { email, password, name, hotelName });
+        setSuccessMsg('Account created! Please sign in with your new credentials.');
+        setTimeout(() => switchView('login'), 2500);
       } else if (view === 'forgot') {
         const response = await api.post('/auth/forgot-password', { email });
         setSuccessMsg(response.data.message);
@@ -83,7 +82,7 @@ const Login: React.FC = () => {
         setTimeout(() => switchView('login'), 3000);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Authentication failed. Please check credentials.');
+      setError(err.response?.data?.errors?.[0]?.msg || err.response?.data?.error || (view === 'register' ? 'Registration failed. Please try again.' : 'Authentication failed. Please check credentials.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -164,7 +163,10 @@ const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {view === 'register' && (
-              <input type="text" required placeholder="Hotel Name" value={hotelName} onChange={(e) => setHotelName(e.target.value)} className="form-input" style={{ background: 'var(--bg-deep)', border: 'none', height: '60px' }} />
+              <>
+                <input type="text" required placeholder="Hotel / Business Name" value={hotelName} onChange={(e) => setHotelName(e.target.value)} className="form-input" style={{ background: 'var(--bg-deep)', border: 'none', height: '60px' }} />
+                <input type="text" required placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className="form-input" style={{ background: 'var(--bg-deep)', border: 'none', height: '60px' }} />
+              </>
             )}
             <input type="email" required placeholder="Sales ID number / Email" value={email} onChange={(e) => setEmail(e.target.value)} className="form-input" style={{ background: 'var(--bg-deep)', border: 'none', height: '60px' }} />
             

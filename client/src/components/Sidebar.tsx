@@ -44,6 +44,18 @@ const Sidebar: React.FC = () => {
   const [closeNotes, setCloseNotes] = useState('');
   const [isClosing, setIsClosing] = useState(false);
 
+  // Dynamically calculate expected cash from live payments
+  const expectedCashLive = activeShift ? 
+    (activeShift.startingFloat || 0) + (activeShift.payments?.filter((p: any) => p.method === 'cash').reduce((sum: number, p: any) => sum + p.amount, 0) || 0) 
+    : 0;
+
+  useEffect(() => {
+    if (showCloseModal && activeShift) {
+      setActualCash(expectedCashLive.toFixed(2));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCloseModal]);
+
   useEffect(() => {
     if (!user?.tenantId) return;
     const fetchUnread = async () => {
@@ -248,7 +260,7 @@ const Sidebar: React.FC = () => {
             <div style={{ borderTop: '1px dashed var(--border)', margin: '0.25rem 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <span>Expected Cash in Drawer</span>
-              <span style={{ fontWeight: 800, color: '#10b981' }}>{tenant?.currency || 'KES'} {activeShift.expectedCash?.toLocaleString()}</span>
+              <span style={{ fontWeight: 800, color: '#10b981' }}>{tenant?.currency || 'KES'} {expectedCashLive.toLocaleString()}</span>
             </div>
           </div>
 
@@ -282,7 +294,13 @@ const Sidebar: React.FC = () => {
 
           <button 
             className="btn btn-primary" 
-            style={{ width: '100%', height: '56px', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 800, background: '#10b981', color: 'white', boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)' }}
+            style={{ 
+              width: '100%', height: '56px', borderRadius: '16px', fontSize: '1.05rem', fontWeight: 800, 
+              background: (!actualCash || isClosing) ? 'var(--bg-deep)' : '#10b981', 
+              color: (!actualCash || isClosing) ? 'var(--text-muted)' : 'white', 
+              boxShadow: (!actualCash || isClosing) ? 'none' : '0 8px 16px rgba(16, 185, 129, 0.2)',
+              cursor: (!actualCash || isClosing) ? 'not-allowed' : 'pointer'
+            }}
             disabled={!actualCash || isClosing}
             onClick={handleCloseShift}
           >

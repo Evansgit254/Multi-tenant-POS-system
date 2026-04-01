@@ -3,6 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import { runWeeklyReportJob } from './jobs/weeklyReport';
 
 import authRouter from './routes/auth';
 import tenantsRouter from './routes/tenants';
@@ -27,6 +28,11 @@ const app = express();
 
 // ── Security & Parsing ────────────────────────────────────────────
 app.use(helmet());
+
+// CORS: Fail fast in production if CORS_ORIGIN is not explicitly set
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+  throw new Error('[STARTUP] CORS_ORIGIN env variable is required in production. Set it to your frontend domain.');
+}
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*', credentials: true }));
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -54,6 +60,24 @@ app.use('/api/tenants/:tenantId/tables',      tablesRouter);
 app.use('/api/tenants/:tenantId/procurement', procurementRouter);
 app.use('/api/tenants/:tenantId/shifts',      shiftsRouter);
 app.use('/api/tenants/:tenantId/mpesa',       mpesaRouter);
+
+// ── Developer Test Overrides ──────────────────────────────────────
+app.get('/api/test/weekly-report', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    res.status(403).json({ error: 'Forbidden: Disabled in production.' });
+    return;
+  }
+  // Extra guard: only allow localhost callers
+  const clientIp = req.ip || req.socket.remoteAddress || '';
+  const isLocal = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(clientIp);
+  if (!isLocal) {
+    res.status(403).json({ error: 'Forbidden: Only accessible from localhost.' });
+    return;
+  }
+  // Dispatch in the background
+  runWeeklyReportJob();
+  res.json({ message: 'Weekly Report Job triggered manually. Check server terminal for the Ethereal URL.' });
+});
 
 // ── 404 ───────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));

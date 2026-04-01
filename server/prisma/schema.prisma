@@ -45,6 +45,7 @@ model Tenant {
   purchaseOrders      PurchaseOrder[]
   bookings            Booking[]
   shifts              Shift[]
+  sessions            Session[]
 }
 
 model User {
@@ -71,6 +72,22 @@ model User {
   messages          Message[]
   channelReads      UserChannelRead[]
   shifts            Shift[]
+  sessions          Session[]
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  tenantId   String?
+  token      String   @unique
+  deviceInfo String   @default("Unknown Device")
+  ipAddress  String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Category {

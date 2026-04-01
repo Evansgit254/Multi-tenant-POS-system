@@ -83,7 +83,7 @@ const Rooms: React.FC = () => {
     try {
       const res = await api.get(`/tenants/${user?.tenantId}/rooms/bookings`);
       setBookings(res.data);
-    } catch (e) { console.error('Bookings fetch failed', e); }
+    } catch (e) { showToast('Failed to load bookings. Please refresh.', 'error'); }
   };
 
   const handleCreateBooking = async () => {

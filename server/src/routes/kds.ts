@@ -66,7 +66,11 @@ router.patch('/tickets/:orderItemId', requireRole('admin', 'manager', 'hotel_adm
     });
 
     res.json(updatedTicket);
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      res.status(400).json({ error: 'Invalid kitchen status', details: error.errors });
+      return;
+    }
     next(error);
   }
 });

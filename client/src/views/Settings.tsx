@@ -3,13 +3,14 @@ import {
   User, Bell, Palette, ShoppingBag, Shield, Globe,
   Loader2, Monitor, Smartphone, Sun, Moon, ChevronRight, ArrowLeft,
   CreditCard, Banknote, Smartphone as Phone, Building2,
-  CheckCircle2, AlertCircle, X as XIcon
+  CheckCircle2, AlertCircle, X as XIcon, UserPlus, MoreVertical, Lock, Trash2, Users
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const SECTIONS = [
   { id: 'profile', label: 'Identity', icon: User },
+  { id: 'team', label: 'Team & Staff', icon: Users },
   { id: 'notifications', label: 'Alerts', icon: Bell },
   { id: 'appearance', label: 'Vibe', icon: Palette },
   { id: 'checkout', label: 'POS Flow', icon: ShoppingBag },
@@ -84,14 +85,43 @@ const Settings: React.FC = () => {
   const [isSavingMpesa, setIsSavingMpesa] = useState(false);
   const [mpesaSaveMsg, setMpesaSaveMsg] = useState('');
 
+  // Team Management state
+  const [teamUsers, setTeamUsers] = useState<any[]>([]);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'cashier', password: '' });
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [teamMsg, setTeamMsg] = useState('');
+
+  // Active Sessions State
+  const [sessions, setSessions] = useState<any[]>([]);
+
   const fetchAll = useCallback(async () => {
     if (!user?.tenantId) return;
     try {
+      // 1. Fetch Core Tenant Settings (Critical)
       const [settingsRes, prefsRes, statsRes] = await Promise.all([
         api.get(`/tenants/${user.tenantId}/settings`),
         api.get(`/tenants/${user.tenantId}/users/me/preferences`),
         api.get(`/tenants/${user.tenantId}/users/me/stats`),
       ]);
+
+      // 2. Fetch Team Users (Optional, Admin Only)
+      try {
+        if (user?.role === 'hotel_admin' || user?.role === 'manager') {
+          const usersRes = await api.get(`/tenants/${user.tenantId}/users`);
+          if (usersRes?.data) setTeamUsers(usersRes.data);
+        }
+      } catch (userErr) {
+        console.error('Failed to fetch team users:', userErr);
+      }
+
+      // 3. Fetch Active Security Sessions
+      try {
+        const sessRes = await api.get(`/tenants/${user.tenantId}/users/me/sessions`);
+        if (sessRes?.data) setSessions(sessRes.data);
+      } catch (sessErr) {
+        console.error('Failed to fetch sessions:', sessErr);
+      }
 
       // Pre-populate visible (non-secret) M-Pesa fields
       const s = settingsRes.data;
@@ -249,6 +279,136 @@ const Settings: React.FC = () => {
               </div>
             </div>
             <SaveBar />
+          </div>
+        );
+
+      case 'team':
+        return (
+          <div style={{ animation: 'fadeUp 0.4s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+              <h3 style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em' }}>Team & Staff</h3>
+              <button onClick={() => setShowAddUserModal(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '44px', borderRadius: '12px', padding: '0 1.25rem' }}>
+                <UserPlus size={18} /> Add Staff
+              </button>
+            </div>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '2rem', fontWeight: 600 }}>Manage employee accounts, roles, and access credentials for your system.</p>
+            
+            {teamMsg && <p style={{ marginBottom: '1.5rem', fontWeight: 800, color: teamMsg.includes('failed') || teamMsg.includes('error') ? '#f43f5e' : '#10b981' }}>{teamMsg}</p>}
+
+            <div style={{ border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead style={{ background: 'var(--bg-deep)' }}>
+                  <tr>
+                    <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.75rem', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Name</th>
+                    <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.75rem', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Role</th>
+                    <th style={{ padding: '1.25rem 1.5rem', fontSize: '0.75rem', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamUsers.map((u, i) => (
+                    <tr key={u.id} style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                      <td style={{ padding: '1.25rem 1.5rem' }}>
+                        <p style={{ fontWeight: 800, fontSize: '0.95rem' }}>{u.name} {u.id === user?.id && <span style={{ marginLeft: '8px', fontSize: '0.65rem', background: 'var(--accent)', color: 'white', padding: '2px 8px', borderRadius: '99px' }}>YOU</span>}</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.email}</p>
+                      </td>
+                      <td style={{ padding: '1.25rem 1.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px', textTransform: 'uppercase', background: u.role === 'hotel_admin' ? '#fce7f3' : u.role === 'manager' ? '#e0e7ff' : '#f1f5f9', color: u.role === 'hotel_admin' ? '#be185d' : u.role === 'manager' ? '#4338ca' : '#475569' }}>
+                          {u.role.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+                        {u.id !== user?.id && u.role !== 'super_admin' && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                            <button onClick={async () => {
+                              const newPass = prompt(`Enter new password for ${u.name}`);
+                              if (!newPass) return;
+                              if (newPass.length < 6) return alert('Password must be at least 6 characters');
+                              try {
+                                await api.patch(`/tenants/${user?.tenantId}/users/${u.id}/password`, { password: newPass });
+                                setTeamMsg('✓ Password safely reset!');
+                                setTimeout(() => setTeamMsg(''), 3000);
+                              } catch { setTeamMsg('Reset failed'); }
+                            }} style={{ border: 'none', background: '#f1f5f9', color: '#64748b', padding: '8px', borderRadius: '8px', cursor: 'pointer' }} title="Reset Password">
+                              <Lock size={16} />
+                            </button>
+                            <button onClick={async () => {
+                              if (!window.confirm(`Are you sure you want to permanently delete ${u.name}?`)) return;
+                              try {
+                                await api.delete(`/tenants/${user?.tenantId}/users/${u.id}`);
+                                setTeamUsers(teamUsers.filter(x => x.id !== u.id));
+                                setTeamMsg('✓ Account permanently deleted');
+                                setTimeout(() => setTeamMsg(''), 3000);
+                              } catch { setTeamMsg('Deletion failed'); }
+                            }} style={{ border: 'none', background: '#fff1f2', color: '#f43f5e', padding: '8px', borderRadius: '8px', cursor: 'pointer' }} title="Delete Account">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {teamUsers.length === 0 && (
+                    <tr><td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No staff members found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {showAddUserModal && (
+              <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+                <div style={{ background: 'var(--bg-elevated)', borderRadius: '24px', padding: '2.5rem', width: '90%', maxWidth: '440px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'fadeUp 0.3s ease-out' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900 }}>Create Staff Account</h3>
+                    <button onClick={() => setShowAddUserModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><XIcon size={24} /></button>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div>
+                      <label style={labelStyle}>Full Name</label>
+                      <input type="text" className="form-input" style={{ background: 'var(--bg-deep)' }} value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} placeholder="Jane Doe" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Email Address (Login ID)</label>
+                      <input type="email" className="form-input" style={{ background: 'var(--bg-deep)' }} value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} placeholder="jane@example.com" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Initial Password (Min 6 chars)</label>
+                      <input type="password" className="form-input" style={{ background: 'var(--bg-deep)' }} value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Role</label>
+                      <select className="form-input" style={{ background: 'var(--bg-deep)' }} value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+                        <option value="cashier">Cashier</option>
+                        <option value="manager">Manager</option>
+                        <option value="hotel_admin">Hotel Admin</option>
+                      </select>
+                    </div>
+                    
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ marginTop: '1rem', height: '52px' }}
+                      disabled={isAddingUser || !newUser.name || !newUser.email || newUser.password.length < 6}
+                      onClick={async () => {
+                        setIsAddingUser(true);
+                        try {
+                          const res = await api.post(`/tenants/${user?.tenantId}/users`, newUser);
+                          setTeamUsers([...teamUsers, res.data]);
+                          setShowAddUserModal(false);
+                          setNewUser({ name: '', email: '', role: 'cashier', password: '' });
+                          setTeamMsg('✓ New staff member successfully created!');
+                          setTimeout(() => setTeamMsg(''), 3000);
+                        } catch (err: any) {
+                          alert(err.response?.data?.error || 'Failed to create user');
+                        } finally { setIsAddingUser(false); }
+                      }}
+                    >
+                      {isAddingUser ? <Loader2 className="animate-spin" /> : 'Create Account'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
           </div>
         );
 
@@ -475,25 +635,47 @@ const Settings: React.FC = () => {
             </div>
             <p style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: '1.5rem' }}>Active Sessions</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {[
-                { device: 'This Browser', loc: 'Current session', color: '#10b981', icon: Monitor, isActive: true },
-                { device: 'Mobile Browser', loc: 'Last seen 2 hours ago', color: '#94a3b8', icon: Smartphone, isActive: false },
-              ].map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'var(--bg-deep)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <s.icon size={24} color="#64748b" />
+              {sessions.map((s: any) => {
+                const isMobile = s.deviceInfo?.toLowerCase().includes('mobile') || s.deviceInfo?.toLowerCase().includes('iphone') || s.deviceInfo?.toLowerCase().includes('android');
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--bg-elevated)', transition: 'all 0.2s', opacity: s.isActive === false ? 0.5 : 1 }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'var(--bg-deep)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isMobile ? <Smartphone size={24} color="#64748b" /> : <Monitor size={24} color="#64748b" />}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 900, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {s.deviceInfo || 'Unknown Device'}
+                        {s.isCurrent && <span style={{ fontSize: '0.7rem', background: '#ecfdf5', color: '#10b981', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>Current Session</span>}
+                      </p>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 800, color: s.isCurrent ? '#10b981' : 'var(--text-muted)' }}>
+                        {s.ipAddress || 'Unknown IP'} • Logged in: {new Date(s.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    {!s.isCurrent && (
+                      <button 
+                        onClick={async () => {
+                          try {
+                            await api.delete(`/tenants/${user?.tenantId}/users/me/sessions/${s.id}`);
+                            setSessions(prev => prev.filter((p: any) => p.id !== s.id));
+                          } catch (e) {
+                            alert('Session revocation failed.');
+                          }
+                        }}
+                        style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f43f5e', background: '#fff1f2', border: 'none', borderRadius: '10px', padding: '6px 16px', cursor: 'pointer', transition: 'transform 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        Revoke
+                      </button>
+                    )}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 900, fontSize: '1rem' }}>{s.device}</p>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: s.color }}>{s.loc}</p>
-                  </div>
-                  {!s.isActive && (
-                    <button style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f43f5e', background: '#fff1f2', border: 'none', borderRadius: '10px', padding: '6px 16px', cursor: 'pointer' }}>
-                      Revoke
-                    </button>
-                  )}
+                );
+              })}
+              {sessions.length === 0 && (
+                <div style={{ padding: '2rem', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '20px' }}>
+                  <p style={{ color: 'var(--text-muted)', fontWeight: 700 }}>No session tracking data found for this tenant.</p>
                 </div>
-              ))}
+              )}
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '1.5rem' }}>
               Signed in as <b>{user?.email}</b> · Role: <b style={{ textTransform: 'capitalize' }}>{user?.role?.replace('_', ' ')}</b>

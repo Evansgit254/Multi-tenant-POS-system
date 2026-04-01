@@ -186,7 +186,7 @@ router.post(
           });
           await tx.order.update({
             where: { id: charge.orderId },
-            data: { status: 'completed' }
+            data: { status: 'COMPLETED' }
           });
           totalSettled += charge.amount;
         }

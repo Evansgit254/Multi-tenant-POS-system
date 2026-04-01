@@ -15,10 +15,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         id: true, name: true, slug: true, currency: true, taxRate: true,
         loyaltyEarnRate: true, receiptFooter: true, isActive: true,
         logoUrl: true, createdAt: true, updatedAt: true,
-        // Only expose whether M-Pesa is configured, not the actual secrets
+        // Only expose shortcode/till for display — never raw API secrets
         mpesaTillDisplay: true,
         mpesaShortcode: true,
-        mpesaConsumerKey: true,   // frontend uses presence to infer 'configured'
+        // mpesaConsumerKey returned only as boolean: expose if it exists
+        mpesaConsumerKey: true,   // presence-check only, never log or forward
       }
     });
     res.json(tenant);

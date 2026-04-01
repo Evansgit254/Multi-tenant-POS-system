@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import { UAParser } from 'ua-parser-js';
 import prisma from '../lib/prisma';
 import { authenticate } from '../middleware/auth';
 
@@ -22,9 +23,9 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const signToken = (user: { id: string; tenantId: string | null; role: string }) =>
+const signToken = (user: { id: string; tenantId: string | null; role: string }, jti: string) =>
   jwt.sign(
-    { id: user.id, tenantId: user.tenantId, role: user.role },
+    { id: user.id, tenantId: user.tenantId, role: user.role, jti },
     process.env.JWT_SECRET!,
     { expiresIn: (process.env.JWT_EXPIRES_IN ?? '8h') as any }
   );
@@ -50,8 +51,38 @@ router.post(
       ? await prisma.tenant.findUnique({ where: { id: user.tenantId } })
       : null;
 
+    // Stateful Session Generation
+    const jti = crypto.randomUUID();
+    const token = signToken(user, jti);
+
+    const parser = new UAParser(req.headers['user-agent'] || '');
+    const browser = parser.getBrowser().name;
+    const os = parser.getOS().name;
+    
+    let deviceInfo = 'Unknown Device';
+    if (browser && os) deviceInfo = `${browser} on ${os}`;
+    else if (browser) deviceInfo = browser;
+    else if (os) deviceInfo = os;
+
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        tenantId: user.tenantId,
+        token: jti,
+        deviceInfo,
+        ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000) // 8 hrs
+      }
+    });
+
+    // Stamp lastLoginAt on successful login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    });
+
     res.json({
-      token: signToken(user),
+      token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, tenantId: user.tenantId },
       tenant: tenant ? { id: tenant.id, name: tenant.name, currency: tenant.currency, taxRate: tenant.taxRate } : null,
     });
@@ -97,11 +128,32 @@ router.post(
           }
         });
 
-        return { user, tenant };
+        const jti = crypto.randomUUID();
+        return { user, tenant, token: signToken(user, jti), jti };
+      });
+
+      // Bind the new initial session for the admin who just registered
+      const parser = new UAParser(req.headers['user-agent'] || '');
+      const browser = parser.getBrowser().name;
+      const os = parser.getOS().name;
+      let deviceInfo = 'Unknown Device';
+      if (browser && os) deviceInfo = `${browser} on ${os}`;
+      else if (browser) deviceInfo = browser;
+      else if (os) deviceInfo = os;
+
+      await prisma.session.create({
+        data: {
+          userId: result.user.id,
+          tenantId: result.user.tenantId,
+          token: result.jti,
+          deviceInfo,
+          ipAddress: req.ip || req.socket.remoteAddress || 'Unknown IP',
+          expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000)
+        }
       });
 
       res.status(201).json({
-        token: signToken(result.user),
+        token: result.token,
         user: { id: result.user.id, name: result.user.name, email: result.user.email, role: result.user.role, tenantId: result.user.tenantId },
         tenant: { id: result.tenant.id, name: result.tenant.name, currency: result.tenant.currency, taxRate: result.tenant.taxRate }
       });
