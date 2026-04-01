@@ -157,6 +157,8 @@ const POSTerminal: React.FC = () => {
 
   const total = Math.max(0, subtotal + tax - currentDiscount);
 
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   if (loading) return (
     <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
       <Loader2 className="animate-spin text-accent" size={32} />
@@ -179,7 +181,7 @@ const POSTerminal: React.FC = () => {
 
   if (!activeShift) {
     return (
-      <div style={{ display: 'flex', height: 'calc(100vh - 2rem)', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', height: 'calc(100vh - 2rem)', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
         <div className="card" style={{ padding: '4rem 3rem', maxWidth: '480px', width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', boxShadow: '0 20px 40px rgba(0,0,0,0.08)' }}>
            <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'rgba(184, 134, 11, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
               <Banknote size={40} />
@@ -217,7 +219,16 @@ const POSTerminal: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 2rem)', gap: '2rem', overflow: 'hidden' }}>
+    <div className="pos-container">
+
+      {/* Mobile Cart Toggle Overlay */}
+      {isCartOpen && (
+        <div 
+          className="mobile-only"
+          onClick={() => setIsCartOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1050, backdropFilter: 'blur(4px)' }}
+        />
+      )}
       
       {/* ── Left: Menu Browser ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -284,7 +295,7 @@ const POSTerminal: React.FC = () => {
         </div>
 
         {/* Menu Grid */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.5rem', alignContent: 'start' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', alignContent: 'start' }}>
           {filteredItems.map((item, i) => (
             <div 
               key={item.id} 
@@ -314,12 +325,14 @@ const POSTerminal: React.FC = () => {
         </div>
       </div>
 
+      <button className="mobile-cart-toggle" onClick={() => setIsCartOpen(true)}>
+        <ShoppingBag size={24} />
+        View Order Ticket 
+        <span style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 10px', borderRadius: '10px', fontSize: '1rem' }}>{items.length}</span>
+      </button>
+
       {/* ── Right: Ticket Panel (White / High-Contrast) ── */}
-      <div style={{ 
-        width: '420px', display: 'flex', flexDirection: 'column', borderRadius: '32px', 
-        background: 'var(--bg-elevated)', border: '1px solid var(--border)', overflow: 'hidden',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.05)'
-      }}>
+      <div className={`pos-cart-sidebar ${isCartOpen ? 'open' : ''}`}>
         
         {/* Ticket Header */}
         <div style={{ padding: '2rem', borderBottom: '1px solid var(--bg-deep)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -327,6 +340,13 @@ const POSTerminal: React.FC = () => {
             <FileText size={24} color="var(--accent)" /> Ticket
           </h2>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              className="mobile-only"
+              onClick={() => setIsCartOpen(false)}
+              style={{ background: 'var(--bg-deep)', border: 'none', padding: '8px', borderRadius: '50%', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
             {items.length > 0 && (
               <button 
                 onClick={clearCart}

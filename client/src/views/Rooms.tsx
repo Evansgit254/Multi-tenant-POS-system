@@ -358,7 +358,7 @@ const Rooms: React.FC = () => {
             <button onClick={() => { setStatusFilter('all'); setTypeFilter('all'); }} className="btn btn-secondary" style={{ marginTop: '1rem' }}>Clear Filters</button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
+          <div className="dashboard-kpi-grid">
             {filteredRooms.map((room, i) => {
               const sc = statusColors[room.status];
               const isSelected = selectedRoom?.id === room.id;
@@ -425,7 +425,7 @@ const Rooms: React.FC = () => {
               <Bed size={24} color="var(--accent)" /> Establish New Room
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-grid">
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Room Identifier</label>
                   <input type="text" className="form-input" style={{ padding: '0.875rem' }} placeholder="e.g. 501" value={roomForm.number} onChange={e => setRoomForm(f => ({ ...f, number: e.target.value }))} />

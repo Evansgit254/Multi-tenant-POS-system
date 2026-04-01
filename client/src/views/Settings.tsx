@@ -751,9 +751,13 @@ const Settings: React.FC = () => {
         <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em' }}>Settings</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '3rem', alignItems: 'flex-start' }}>
+      <div className="responsive-grid" style={{ gridTemplateColumns: undefined, alignItems: 'flex-start' }}>
         {/* Sidebar Nav */}
-        <div style={{ padding: '0.75rem', borderRadius: '28px', background: 'var(--bg-deep)', border: '1px solid var(--border)', position: 'sticky', top: '1.5rem' }}>
+        <div style={{ 
+          padding: '0.75rem', borderRadius: '28px', background: 'var(--bg-deep)', border: '1px solid var(--border)', 
+          position: 'sticky', top: '1.5rem', display: 'flex', flexDirection: 'column', gap: '4px',
+          overflowX: 'auto', scrollbarWidth: 'none'
+        }} className="mobile-horizontal-scroll">
           {SECTIONS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}

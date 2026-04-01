@@ -108,6 +108,7 @@ thead th {
   display: flex;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 .app-container .sidebar {
@@ -118,6 +119,8 @@ thead th {
   position: sticky;
   top: 0;
   height: 100vh;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), left 0.3s ease;
+  z-index: 1000;
 }
 
 .main-content {
@@ -126,6 +129,74 @@ thead th {
   overflow-y: auto;
   padding: 2.5rem;
   background: var(--bg-base);
+  transition: padding 0.3s ease;
+}
+
+/* ── Mobile Responsiveness ── */
+@media (max-width: 1024px) {
+  .app-container .sidebar {
+    position: fixed;
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  .app-container .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-content {
+    padding: 1rem;
+    padding-top: 5rem; /* Space for mobile header */
+  }
+}
+
+.hidden-mobile {
+  @media (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+.mobile-only {
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+  }
+}
+
+.flex-mobile-column {
+  display: flex;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+/* Mobile Header/Navbar Toggle */
+.mobile-navbar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--bg-sidebar);
+  color: white;
+  align-items: center;
+  padding: 0 1.5rem;
+  z-index: 900;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 1024px) {
+  .mobile-navbar {
+    display: flex;
+    justify-content: space-between;
+  }
 }
 
 /* Glassmorphic Utilities */
@@ -208,6 +279,56 @@ thead th {
 .form-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* ── Login Page Responsiveness ── */
+.login-card {
+  display: flex;
+  width: 1200px;
+  max-width: 100%;
+  height: 780px;
+  border-radius: 48px;
+  overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.3);
+  background: var(--bg-elevated);
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 1200px) {
+  .login-card {
+    width: 900px;
+    height: 700px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .login-card {
+    flex-direction: column;
+    height: auto;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 32px;
+  }
+
+  .login-brand-pane {
+    display: none !important; /* Hide brand pane on mobile/small-tablet to prioritize form */
+  }
+
+  .login-form-pane {
+    padding: 3rem 2rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+  }
+  
+  .login-form-pane {
+    padding: 4rem 1.5rem !important;
+  }
 }
 
 /* Sidebar Specific */
@@ -316,4 +437,127 @@ thead th {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.responsive-stack {
+  display: flex;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .responsive-stack {
+    flex-direction: column;
+  }
+}
+
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── POS Terminal Responsiveness ── */
+.pos-container {
+  display: flex;
+  height: calc(100vh - 2rem);
+  gap: 2rem;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .pos-container {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+    gap: 1rem;
+    padding-bottom: 80px; /* Space for the floating cart button */
+  }
+}
+
+.pos-cart-sidebar {
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 32px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 1024px) {
+  .pos-cart-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 80vh;
+    z-index: 1100;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 32px 32px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+  }
+
+  .pos-cart-sidebar.open {
+    transform: translateY(0);
+  }
+}
+
+.mobile-cart-toggle {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .mobile-cart-toggle {
+    display: flex;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    height: 64px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    z-index: 1050;
+    box-shadow: 0 12px 24px var(--accent-glow);
+  }
+}
+
+@media (max-width: 1024px) {
+  .mobile-horizontal-scroll {
+    flex-direction: row !important;
+    overflow-x: auto;
+    white-space: nowrap;
+    position: static !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    gap: 8px !important;
+  }
 }

@@ -91,16 +91,12 @@ const Login: React.FC = () => {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg-sidebar)', padding: '2rem'
+      background: 'var(--bg-sidebar)', padding: '1rem'
     }}>
-      <div style={{
-        display: 'flex', width: '1200px', maxWidth: '100%', height: '780px',
-        borderRadius: '48px', overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.3)',
-        background: 'var(--bg-elevated)'
-      }}>
+      <div className="login-card">
         
         {/* Left Pane: Brand & Illustration (Emerald) */}
-        <div style={{
+        <div className="login-brand-pane" style={{
           flex: 1, background: '#cbd5e1', display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', padding: '4rem', position: 'relative'
         }}>
@@ -141,7 +137,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Right Pane: Form Area (White) */}
-        <div style={{ flex: 1, padding: '5rem', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        <div className="login-form-pane" style={{ flex: 1, padding: '5rem', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           
           <div style={{ marginBottom: '3rem' }}>
             <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>

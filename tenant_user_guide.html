@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mumo Forge POS - Tenant User Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #b48c1d;
+            --text: #1f2937;
+            --bg: #ffffff;
+            --border: #e5e7eb;
+            --accent-bg: #f9fafb;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: var(--bg);
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            border-bottom: 4px solid var(--primary);
+            padding-bottom: 1rem;
+        }
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-top: 2.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+        }
+        p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+        ul, ol {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.75rem;
+        }
+        code {
+            background: var(--accent-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            border: 1px solid var(--border);
+        }
+        .footer {
+            margin-top: 4rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6b7280;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+        }
+        @media print {
+            body { margin: 0; padding: 2cm; }
+            h1 { page-break-after: avoid; }
+            h2 { page-break-before: always; }
+            h2:first-of-type { page-break-before: auto; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🌟 Welcome to Mumo Forge Smart POS</h1>
+    <p>Welcome to your new Hotel &amp; Restaurant Point of Sale system! This system is designed to seamlessly integrate your restaurant sales, hotel room management, and inventory tracking into one beautiful, lightning-fast application. </p>
+    <p>This guide will walk you through the core features you need to manage your business efficiently.</p>
+    
+    <hr>
+    
+    <h2>1. 📊 The Dashboard (Your Command Center)</h2>
+    <p>When you log in, you are greeted by the Dashboard. This is your real-time overview of how the business is performing today.</p>
+    <ul>
+        <li><strong>Top KPIs</strong>: Instantly view your total revenue, total orders placed, and active hotel guests.</li>
+        <li><strong>Recent Activity</strong>: A live feed of the most recent orders, including what was sold and how it was paid for.</li>
+        <li><strong>Low Stock Alerts</strong>: Automatically warns you if any crucial ingredients (like beer, milk, or eggs) are running low.</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>2. 🍔 The POS Terminal (Making Sales)</h2>
+    <p>The POS Terminal is where your cashiers will spend most of their time ringing up customers. It is built for speed.</p>
+    <h3>How to place an order:</h3>
+    <ol>
+        <li><strong>Select Items</strong>: Click on any menu item (categorized by Breakfast, Drinks, Main Course, etc.) to add it to the cart. You can also use the search bar at the top to find specific items quickly.</li>
+        <li><strong>Adjust Quantities</strong>: Click the <code>+</code> or <code>-</code> buttons next to any item in the cart to increase or decrease the amount.</li>
+        <li><strong>Select Order Type</strong>: Choose whether the customer is <strong>Walk-in</strong> (Dine-in / Takeaway) or a <strong>Hotel Guest</strong>.
+            <ul>
+                <li><em>If Hotel Guest</em>: You can select their name/room from a dropdown. The bill can be charged directly to their room!</li>
+            </ul>
+        </li>
+        <li><strong>Checkout</strong>: Click the large <strong>Charge</strong> button at the bottom.</li>
+        <li><strong>Payment Method</strong>: Select how the customer is paying:
+            <ul>
+                <li><strong>Cash</strong>: Enter the amount handed to you, and the system calculates the exact change.</li>
+                <li><strong>Card/Bank</strong>: Record traditional terminal payments.</li>
+                <li><strong>M-Pesa</strong>: For seamless mobile money, just enter their phone number and the system handles the rest (if configured).</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <hr>
+    
+    <h2>3. 🛎️ Room Management (For Hotels)</h2>
+    <p>If your establishment includes hotel rooms, the <strong>Rooms</strong> tab gives you a bird's-eye view of your property.</p>
+    <ul>
+        <li><strong>Room Status Colors</strong>:
+            <ul>
+                <li>🟢 <strong>Green (Available)</strong>: Ready for a new guest.</li>
+                <li>🔴 <strong>Red (Occupied)</strong>: Currently checked in.</li>
+                <li>🟡 <strong>Yellow (Maintenance)</strong>: Being cleaned or repaired.</li>
+            </ul>
+        </li>
+        <li><strong>Checking Guests In/Out</strong>: Click on any room to instantly check a guest in, view their current accrued bill (including all food/drinks charged to the room from the POS), and process their final checkout payment perfectly split across all their activity.</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>4. 📦 Inventory &amp; Menus</h2>
+    <p>Stop guessing what you have in stock! The system automatically deducts ingredients every time you sell a meal.</p>
+    <ul>
+        <li><strong>Menu Management</strong>: Add new meals, update prices, and choose beautiful emojis to represent them on the POS.</li>
+        <li><strong>Inventory Tracking</strong>: Add your raw ingredients (e.g., "Eggs" or "Tusker Bottles").</li>
+        <li><strong>Recipes</strong>: You can link ingredients to menu items. For example, tell the system that a "Full English Breakfast" requires 2 Eggs. When a cashier sells that breakfast, 2 eggs are instantly removed from the inventory!</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>5. 📈 Reports &amp; Analytics</h2>
+    <p>Knowledge is power. The <strong>Reports</strong> section lets you generate detailed insights.</p>
+    <ul>
+        <li><strong>Daily Summaries</strong>: See exactly how much cash vs. M-Pesa was collected today.</li>
+        <li><strong>Shift Reports</strong>: Close the register at the end of the day with confidence, ensuring the cash in the drawer matches the system exactly.</li>
+        <li><strong>Exporting</strong>: Click the download button to export any report to an Excel/CSV file for your accountant.</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>6. ⚙️ Settings &amp; Team Management</h2>
+    <p>Customize the system perfectly to your brand.</p>
+    <ul>
+        <li><strong>Business Details</strong>: Update your Hotel/Restaurant name and the custom "Thank You" message printed at the bottom of customer receipts.</li>
+        <li><strong>Staff Accounts</strong>: As a Manager, you can create new accounts for your staff.
+            <ul>
+                <li><em>Tip: Create <strong>Cashier</strong> accounts for your normal staff. Cashiers can ring up sales but cannot delete orders or view sensitive financial analytics.</em></li>
+            </ul>
+        </li>
+    </ul>
+    
+    <div class="footer">
+        <p><strong>Happy Selling! 🚀</strong></p>
+        <p>&copy; 2026 Mumo Forge POS System Setup</p>
+    </div>
+</body>
+</html>

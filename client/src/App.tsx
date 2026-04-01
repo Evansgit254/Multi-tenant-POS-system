@@ -9,7 +9,7 @@ import Login from './views/Login';
 import Dashboard from './views/Dashboard';
 import POSTerminal from './views/POSTerminal';
 import Rooms from './views/Rooms';
-import Menu from './views/Menu';
+import MenuView from './views/Menu';
 import Bills from './views/Bills';
 import Messages from './views/Messages';
 import Settings from './views/Settings';
@@ -38,7 +38,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+import { Menu as MenuIcon, X as XIcon, Sparkles } from 'lucide-react';
+
 const App: React.FC = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('app_theme');
     if (savedTheme === 'dark') {
@@ -56,13 +60,40 @@ const App: React.FC = () => {
             <Route path="/*" element={
               <ProtectedRoute>
                 <div className="app-container">
-                  <Sidebar />
+                  {/* Mobile Header */}
+                  <header className="mobile-navbar">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <Sparkles size={20} color="var(--accent)" />
+                      <span style={{ fontWeight: 800, fontSize: '1rem' }}>ServePoint</span>
+                    </div>
+                    <button 
+                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                      style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+                    >
+                      {isSidebarOpen ? <XIcon size={28} /> : <MenuIcon size={28} />}
+                    </button>
+                  </header>
+
+                  <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+                  
+                  {/* Overlay for mobile sidebar */}
+                  {isSidebarOpen && (
+                    <div 
+                      className="mobile-only"
+                      onClick={() => setIsSidebarOpen(false)}
+                      style={{ 
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', 
+                        zIndex: 950, backdropFilter: 'blur(4px)' 
+                      }}
+                    />
+                  )}
+
                   <main className="main-content">
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/pos" element={<POSTerminal />} />
                       <Route path="/rooms" element={<Rooms />} />
-                      <Route path="/menu" element={<Menu />} />
+                      <Route path="/menu" element={<MenuView />} />
                       <Route path="/inventory" element={<Inventory />} />
                       <Route path="/kds" element={<KDS />} />
                       <Route path="/guests" element={<Guests />} />

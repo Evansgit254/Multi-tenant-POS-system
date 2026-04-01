@@ -33,7 +33,12 @@ interface NavItem {
   badge?: number;
 }
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user, tenant, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -133,9 +138,9 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       {/* Brand Logo */}
-      <div className="sidebar-header">
+      <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
           <div style={{ 
             width: '40px', height: '40px', borderRadius: '12px', 
@@ -149,6 +154,15 @@ const Sidebar: React.FC = () => {
             ServePoint
           </h1>
         </div>
+
+        {/* Mobile Close Button */}
+        <button 
+          className="mobile-only"
+          onClick={onClose}
+          style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Navigation */}

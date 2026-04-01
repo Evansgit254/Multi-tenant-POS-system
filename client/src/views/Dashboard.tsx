@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div className="dashboard-kpi-grid">
           {[
             { title: 'Food & Drinks POS', desc: 'Ring up walk-in customers and process payments natively.', icon: Wallet, link: '/pos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
             { title: 'Floor Plan / Tables', desc: 'Manage dine-in operations and table assignments.', icon: Target, link: '/floor-plan', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* KPI Bento Blocks */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
+      <div className="dashboard-kpi-grid">
         {kpis.map((kpi, i) => (
           <div key={i} className="card" style={{ 
             padding: '2.25rem', background: 'var(--bg-elevated)', borderRadius: '32px', 
@@ -214,7 +214,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Data Visualization Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '1.5rem' }}>
+      <div className="responsive-grid">
         <div className="card" style={{ 
           background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', 
           padding: '2.5rem', display: 'flex', flexDirection: 'column',

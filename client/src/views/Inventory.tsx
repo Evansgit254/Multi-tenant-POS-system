@@ -122,7 +122,7 @@ const Inventory: React.FC = () => {
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontWeight: 500, fontSize: '0.9rem' }}>Real-time stock tracking and auditing.</p>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="responsive-stack" style={{ alignItems: 'center' }}>
           <div style={{ position: 'relative', width: '300px' }}>
             <Search size={16} strokeWidth={3} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
@@ -315,7 +315,7 @@ const Inventory: React.FC = () => {
               <button type="button" onClick={() => setIsItemModalOpen(false)} style={{ background: 'var(--bg-deep)', border: 'none', width: '2rem', height: '2rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', cursor: 'pointer' }}><X size={16} /></button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div className="responsive-grid" style={{ gap: '1.25rem' }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Item Nomenclature *</label>
                 <input required type="text" value={itemFormData.name || ''} onChange={e => setItemFormData({...itemFormData, name: e.target.value})} className="form-input" placeholder="e.g. Vintage Whiskey" style={{ padding: '0.875rem' }} />
