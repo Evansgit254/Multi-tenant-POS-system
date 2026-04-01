@@ -46,7 +46,7 @@ npm run build
 # 5. Build Frontend
 echo "🎨 Building Frontend Client..."
 cd $APP_DIR/client
-npm install
+npm install --legacy-peer-deps
 npm run build
 
 # 6. Configure Nginx
