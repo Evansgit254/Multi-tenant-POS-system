@@ -42,8 +42,12 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
 
 // GET /api/tenants/:tenantId/reports/orders (Detailed history)
 router.get('/orders', async (req: Request, res: Response): Promise<void> => {
-  const { from, to } = req.query;
+  const { from, to, page, limit } = req.query;
   const tenantId = req.params.tenantId;
+
+  // FORENSIC GAP FIX: Implemented hard ceiling block to prevent array memory overflows
+  const take = Math.min(Number(limit) || 100, 500); 
+  const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
 
   try {
     const orders = await prisma.order.findMany({
@@ -60,7 +64,9 @@ router.get('/orders', async (req: Request, res: Response): Promise<void> => {
         cashier: { select: { name: true } },
         room: { select: { number: true } }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take,
+      skip
     });
 
     res.json(orders);
@@ -110,7 +116,8 @@ router.get('/shift-summary', async (req: Request, res: Response): Promise<void> 
       summary.completedCount++;
       summary.grossSales += Number(o.subtotal) + Number(o.taxAmount);
       summary.netSales += Number(o.total);
-      summary.totalDiscounts += Number(o.discount) + Number(o.discountFixed) + (Number(o.subtotal) * (Number(o.discountPercent)/100));
+      // FORENSIC GAP FIX: Removed double-counting (discountFixed + percentage are already folded into o.discount)
+      summary.totalDiscounts += Number(o.discount);
       summary.totalTax += Number(o.taxAmount);
 
       o.payments.forEach(p => {
@@ -130,27 +137,27 @@ router.get('/taxes', async (req: Request, res: Response): Promise<void> => {
   const tenantId = req.params.tenantId;
 
   try {
-    const orders = await prisma.order.findMany({
-      where: {
-        tenantId,
-        status: { in: ['completed', 'partially_paid'] },
-        createdAt: {
-          gte: from ? new Date(from as string) : undefined,
-          lte: to ? new Date(to as string) : undefined,
-        },
+    const where = {
+      tenantId,
+      status: { in: ['completed', 'partially_paid'] },
+      createdAt: {
+        gte: from ? new Date(from as string) : undefined,
+        lte: to ? new Date(to as string) : undefined,
       },
-      select: { subtotal: true, taxAmount: true, createdAt: true }
+    };
+
+    // FORENSIC GAP FIX: Out-of-memory array mapping swapped for native SQLite aggregation
+    const aggregates = await prisma.order.aggregate({
+      where,
+      _sum: { subtotal: true, taxAmount: true },
+      _count: { id: true }
     });
 
-    let taxableSales = 0;
-    let taxCollected = 0;
-    
-    orders.forEach(o => {
-      taxableSales += Number(o.subtotal);
-      taxCollected += Number(o.taxAmount);
+    res.json({ 
+      taxableSales: aggregates._sum.subtotal || 0, 
+      taxCollected: aggregates._sum.taxAmount || 0, 
+      orderCount: aggregates._count.id 
     });
-
-    res.json({ taxableSales, taxCollected, orderCount: orders.length });
   } catch (error) {
     res.status(500).json({ error: 'Failed to generate tax report' });
   }

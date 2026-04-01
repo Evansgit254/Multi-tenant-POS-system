@@ -148,8 +148,10 @@ router.get('/dashboard', async (req, res, next) => {
     // New guests this period
     const newGuests = await prisma.guest.count({ where: { tenantId, createdAt: dateFilter } });
 
-    // Revenue by payment method
-    const payments = await prisma.payment.findMany({ where: { tenantId, paidAt: dateFilter } });
+    // Revenue by payment method — FORENSIC GAP FIX: Do not include payments attached to cancelled orders
+    const payments = await prisma.payment.findMany({ 
+      where: { tenantId, paidAt: dateFilter, order: { status: 'completed' } } 
+    });
     const revenueByMethod: Record<string, number> = {};
     payments.forEach(p => {
       revenueByMethod[p.method] = (revenueByMethod[p.method] || 0) + Number(p.amount);
