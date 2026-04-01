@@ -9,7 +9,7 @@ echo "🚀 Starting POS System Deployment..."
 
 # 1. System Updates & Dependencies
 echo "📦 Installing system dependencies..."
-sudo apt update && sudo apt upgrade -y
+sudo apt update
 sudo apt install -y curl git nginx certbot python3-certbot-nginx build-essential
 
 # 2. Install Node.js & PM2
