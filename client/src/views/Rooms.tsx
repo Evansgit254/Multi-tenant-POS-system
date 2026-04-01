@@ -168,7 +168,7 @@ const Rooms: React.FC = () => {
             </div>
 
             {/* Room Addition Button */}
-            {(user?.role === 'hotel_admin' || user?.role === 'system_admin' || user?.role === 'manager') && activeTab === 'rooms' && (
+            {((user?.role as string) === 'hotel_admin' || (user?.role as string) === 'system_admin' || (user?.role as string) === 'manager') && activeTab === 'rooms' && (
               <button onClick={() => setShowRoomModal(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', fontSize: '0.9rem' }}>
                 <Plus size={18} /> Add Room
               </button>

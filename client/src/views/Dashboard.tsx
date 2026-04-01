@@ -5,7 +5,7 @@ import api from '../api';
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight,
   CheckCircle, Loader2, Users, DollarSign, Activity,
-  Sparkles, Clock, AlertCircle, AlertTriangle, CreditCard, Wallet, Smartphone, Target, Percent
+  Sparkles, AlertTriangle, Wallet, Smartphone, Target
 } from 'lucide-react';
 
 const RANGES = ['Yesterday', 'Today', 'Week', 'Month', 'Year'];
@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
               ].map((ch, i) => {
                 const pct = (ch.value / dTotal) * 100;
                 return (
-                  <div key={i} style={{ group: true }} className="hover-lift">
+                  <div key={i} className="group hover-lift">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <span style={{ fontSize: '1.6rem', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}>{ch.icon}</span>

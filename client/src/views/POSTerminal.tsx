@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Plus, Minus, Trash2, CreditCard, Banknote, Smartphone, 
+  Search, Plus, Minus, CreditCard, Banknote, Smartphone, 
   BedSingle, Loader2, CheckCircle2, ShoppingBag, ChevronRight, 
-  Percent, Tag, X, FileText, Sparkles, LayoutGrid, Clock
+  Tag, X, FileText, Sparkles, LayoutGrid
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,7 @@ interface MenuItem {
 
 const POSTerminal: React.FC = () => {
   const { user, tenant } = useAuth();
-  const { items, addItem, updateQuantity, removeItem, clearCart, subtotal } = useCart();
+  const { items, addItem, updateQuantity, clearCart, subtotal } = useCart();
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -51,7 +51,7 @@ const POSTerminal: React.FC = () => {
   const [showMpesaModal, setShowMpesaModal] = useState(false);
   const [mpesaPhone, setMpesaPhone] = useState('');
   const [mpesaStatus, setMpesaStatus] = useState<'idle' | 'waiting' | 'success' | 'error'>('idle');
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [, setPendingOrderId] = useState<string | null>(null);
   // M-Pesa tenant config
   const [mpesaStkConfigured, setMpesaStkConfigured] = useState(false);
   const [mpesaTillDisplay, setMpesaTillDisplay] = useState<string | null>(null);

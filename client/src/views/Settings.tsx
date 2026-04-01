@@ -3,7 +3,7 @@ import {
   User, Bell, Palette, ShoppingBag, Shield, Globe,
   Loader2, Monitor, Smartphone, Sun, Moon, ChevronRight, ArrowLeft,
   CreditCard, Banknote, Smartphone as Phone, Building2,
-  CheckCircle2, AlertCircle, X as XIcon, UserPlus, MoreVertical, Lock, Trash2, Users
+  CheckCircle2, AlertCircle, X as XIcon, UserPlus, Lock, Trash2, Users
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -60,7 +60,7 @@ const DEFAULT_PREFS = {
 };
 
 const Settings: React.FC = () => {
-  const { user, tenant } = useAuth();
+  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -107,7 +107,7 @@ const Settings: React.FC = () => {
 
       // 2. Fetch Team Users (Optional, Admin Only)
       try {
-        if (user?.role === 'hotel_admin' || user?.role === 'manager') {
+        if ((user?.role as string) === 'hotel_admin' || (user?.role as string) === 'manager') {
           const usersRes = await api.get(`/tenants/${user.tenantId}/users`);
           if (usersRes?.data) setTeamUsers(usersRes.data);
         }
@@ -305,7 +305,7 @@ const Settings: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {teamUsers.map((u, i) => (
+                  {teamUsers.map((u) => (
                     <tr key={u.id} style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
                       <td style={{ padding: '1.25rem 1.5rem' }}>
                         <p style={{ fontWeight: 800, fontSize: '0.95rem' }}>{u.name} {u.id === user?.id && <span style={{ marginLeft: '8px', fontSize: '0.65rem', background: 'var(--accent)', color: 'white', padding: '2px 8px', borderRadius: '99px' }}>YOU</span>}</p>
