@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   BarChart3, TrendingUp, PackageMinus, Award, Loader2,
   DollarSign, ShoppingCart, Tag, CreditCard, Banknote, Smartphone, Bed,
-  ArrowUpRight
+  ArrowUpRight, Sparkles
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,11 @@ interface AnalyticsData {
   revenueDonut: { dineIn: number; takeaway: number; delivery: number };
 }
 
+interface ForecastData {
+  actuals: { date: string; revenue: number }[];
+  forecast: { date: string; predictedRevenue: number }[];
+}
+
 const RANGES = [
   { label: 'Today', value: 'today' },
   { label: 'Week', value: 'week' },
@@ -32,6 +37,8 @@ const Analytics: React.FC = () => {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState('week');
+  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,6 +54,22 @@ const Analytics: React.FC = () => {
     };
     if (user?.tenantId) fetchData();
   }, [user?.tenantId, range]);
+
+  // Fetch AI forecast once on mount
+  useEffect(() => {
+    const fetchForecast = async () => {
+      setForecastLoading(true);
+      try {
+        const res = await api.get(`/tenants/${user?.tenantId}/forecast`);
+        setForecast(res.data);
+      } catch (err) {
+        console.error('Forecast fetch failed:', err);
+      } finally {
+        setForecastLoading(false);
+      }
+    };
+    if (user?.tenantId) fetchForecast();
+  }, [user?.tenantId]);
 
   const cur = tenant?.currency || 'KES';
 
@@ -236,6 +259,68 @@ const Analytics: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+          {/* AI 7-Day Sales Forecast */}
+          <div className="card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #0f766e, #6366f1)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', marginTop: '0.25rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Sparkles size={18} style={{ color: '#6366f1' }} /> AI 7-Day Revenue Forecast
+              </h3>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.2rem 0.6rem', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '99px' }}>
+                Linear Regression
+              </span>
+            </div>
+            {forecastLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <Loader2 size={28} className="animate-spin" style={{ color: '#6366f1' }} />
+              </div>
+            ) : !forecast ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No forecast data available yet. Needs at least 7 days of order history.</p>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '160px', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                  {/* Actuals — last 7 days sampled */}
+                  {forecast.actuals.slice(-7).map((day, i) => {
+                    const allVals = [...forecast.actuals.slice(-7).map(d => d.revenue), ...forecast.forecast.map(d => d.predictedRevenue)];
+                    const max = Math.max(...allVals, 1);
+                    const h = (day.revenue / max) * 100;
+                    return (
+                      <div key={`a${i}`} title={`Actual: ${cur} ${day.revenue.toLocaleString()}\n${day.date}`}
+                        style={{ flex: 1, height: `${h}%`, minHeight: '4px', background: 'var(--border)', borderRadius: '4px 4px 0 0', transition: 'opacity 0.2s', cursor: 'default' }} />
+                    );
+                  })}
+                  {/* Separator */}
+                  <div style={{ width: '2px', height: '100%', background: 'rgba(99,102,241,0.3)', borderLeft: '2px dashed rgba(99,102,241,0.5)', flexShrink: 0 }} />
+                  {/* Forecast — next 7 days */}
+                  {forecast.forecast.map((day, i) => {
+                    const allVals = [...forecast.actuals.slice(-7).map(d => d.revenue), ...forecast.forecast.map(d => d.predictedRevenue)];
+                    const max = Math.max(...allVals, 1);
+                    const h = (day.predictedRevenue / max) * 100;
+                    return (
+                      <div key={`f${i}`} title={`Forecast: ${cur} ${day.predictedRevenue.toLocaleString()}\n${day.date}`}
+                        style={{ flex: 1, height: `${h}%`, minHeight: '4px', background: 'linear-gradient(to top, #6366f1, #a5b4fc)', borderRadius: '4px 4px 0 0', opacity: 0.85, cursor: 'default', border: '1px dashed rgba(99,102,241,0.4)', borderBottom: 'none' }} />
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ width: '12px', height: '12px', background: 'var(--border)', borderRadius: '2px' }} />
+                    Last 7 days (actual)
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: '#6366f1', fontWeight: 700 }}>
+                    <div style={{ width: '12px', height: '12px', background: '#6366f1', borderRadius: '2px', opacity: 0.7, border: '1px dashed #6366f1' }} />
+                    Next 7 days (predicted)
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.75rem', padding: '0.625rem 0.875rem', background: 'rgba(99,102,241,0.06)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  📈 Predicted revenue for next 7 days:{' '}
+                  <strong style={{ color: '#6366f1' }}>
+                    {cur} {forecast.forecast.reduce((s, d) => s + d.predictedRevenue, 0).toLocaleString()}
+                  </strong>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

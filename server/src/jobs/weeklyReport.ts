@@ -102,18 +102,70 @@ export const runWeeklyReportJob = async () => {
 };
 
 /**
+ * Nightly low-stock alert — emails hotel_admin users for each tenant that has
+ * items below the lowStockThreshold.
+ */
+const runLowStockAlert = async () => {
+  console.log('[CRON] Running nightly low-stock alert check...');
+  try {
+    const tenants = await prisma.tenant.findMany({ where: { isActive: true } });
+    for (const tenant of tenants) {
+      const lowItems = await prisma.inventoryItem.findMany({
+        where: {
+          tenantId: tenant.id,
+          currentStock: { lte: prisma.inventoryItem.fields.lowStockThreshold as any }
+        }
+      });
+      // Prisma doesn't support column comparison directly — use raw filter
+      const allItems = await prisma.inventoryItem.findMany({ where: { tenantId: tenant.id } });
+      const flagged = allItems.filter(i => i.currentStock <= i.lowStockThreshold);
+      if (flagged.length === 0) continue;
+
+      const admins = await prisma.user.findMany({
+        where: { tenantId: tenant.id, isActive: true, role: { in: ['hotel_admin', 'manager'] } }
+      });
+
+      const rows = flagged.map(i =>
+        `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${i.name}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#ef4444;">${i.currentStock} ${i.unit}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${i.lowStockThreshold} ${i.unit}</td></tr>`
+      ).join('');
+
+      const html = `
+        <div style="font-family:Arial,sans-serif;padding:24px;max-width:600px;">
+          <h2 style="color:#ef4444;">⚠️ Low Stock Alert — ${tenant.name}</h2>
+          <p>The following items are at or below their reorder threshold:</p>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:#f8fafc;">
+              <th style="padding:8px;text-align:left;">Item</th>
+              <th style="padding:8px;text-align:left;">Current Stock</th>
+              <th style="padding:8px;text-align:left;">Reorder At</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="margin-top:16px;font-size:13px;color:#64748b;">Please reorder soon to avoid stockouts.</p>
+        </div>`;
+
+      for (const admin of admins) {
+        await sendEmail(admin.email, `⚠️ Low Stock Alert — ${tenant.name}`, html);
+      }
+      console.log(`[CRON] Low-stock alert sent for tenant: ${tenant.name} (${flagged.length} items)`);
+    }
+    console.log('[CRON] ✅ Low-stock alert check complete.');
+  } catch (err) {
+    console.error('[CRON] Low-stock alert failed:', err);
+  }
+};
+
+/**
  * Initializes the `node-cron` daemon inside the root application server process
  */
 export const initializeCronJobs = () => {
-  // Standard Production Cron Schedule: Every Sunday at 20:00 (8:00 PM)
-  // Format: "minute hour dayOfMonth month dayOfWeek" -> "0 20 * * 0"
+  // Weekly Report: Every Sunday at 20:00
   cron.schedule('0 20 * * 0', () => {
     console.log('[CRON] Automatic trigger received for Sunday 8PM Weekly Report!');
     runWeeklyReportJob();
   });
 
-  // Session Expiry Pruning: Runs nightly at 03:00 AM to delete expired sessions
-  // Prevents unbounded Session table growth from stale JTI tokens
+  // Session Expiry Pruning: Runs nightly at 03:00 AM
   cron.schedule('0 3 * * *', async () => {
     console.log('[CRON] Running nightly session expiry pruning...');
     try {
@@ -125,6 +177,11 @@ export const initializeCronJobs = () => {
       console.error('[CRON] Failed to prune expired sessions:', err);
     }
   });
-  
-  console.log('[CRON] Engine Armed: Weekly Report @ Sun 20:00 | Session Pruning @ daily 03:00');
+
+  // Low-Stock Alert: Every morning at 06:00 AM
+  cron.schedule('0 6 * * *', () => {
+    runLowStockAlert();
+  });
+
+  console.log('[CRON] Engine Armed: Weekly Report @ Sun 20:00 | Session Pruning @ daily 03:00 | Low-Stock Alert @ daily 06:00');
 };

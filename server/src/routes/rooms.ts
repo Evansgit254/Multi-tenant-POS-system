@@ -290,7 +290,8 @@ router.post('/bookings', authorize('hotel_admin', 'manager'), async (req: Reques
 });
 
 // PATCH /api/tenants/:tenantId/rooms/bookings/:id
-router.patch('/bookings/:id', async (req: Request, res: Response): Promise<void> => {
+// SECURITY FIX: Added authorization guard — only managers+ can update bookings
+router.patch('/bookings/:id', authorize('hotel_admin', 'manager'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { tenantId, id } = req.params;
     const { status, notes } = req.body;
@@ -305,6 +306,7 @@ router.patch('/bookings/:id', async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: 'Failed to update booking' });
   }
 });
+
 
 // GAP #3 FIX: POST /bookings/:id/check-in — atomically updates Booking + Room
 router.post('/bookings/:id/check-in', authorize('hotel_admin', 'cashier'), async (req: Request, res: Response): Promise<void> => {

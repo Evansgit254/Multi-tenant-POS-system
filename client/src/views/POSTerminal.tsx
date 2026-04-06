@@ -7,6 +7,7 @@ import {
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
+import { useToast } from '../context/ToastContext';
 
 interface Category {
   id: string;
@@ -26,6 +27,40 @@ interface MenuItem {
 const POSTerminal: React.FC = () => {
   const { user, tenant } = useAuth();
   const { items, addItem, updateQuantity, clearCart, subtotal } = useCart();
+  const { showToast } = useToast();
+
+  // ── SSE: Real-time order-ready notifications ───────────────────────
+  useEffect(() => {
+    if (!user?.tenantId) return;
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+    // SSE connection with JWT token as query param for EventSource (no custom headers)
+    const es = new EventSource(`${API_BASE}/api/tenants/${user.tenantId}/sse?token=${token}`);
+
+    es.addEventListener('order:ready', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        showToast(`🍽️ Order ${data.orderNumber} is READY for pickup!`, 'success');
+      } catch {}
+    });
+
+    es.addEventListener('order:new', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        showToast(`🛎️ New order ${data.orderNumber} received`, 'info');
+      } catch {}
+    });
+
+    es.addEventListener('low_stock', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        showToast(`⚠️ Low stock: ${data.name} (${data.currentStock} left)`, 'error');
+      } catch {}
+    });
+
+    es.onerror = () => { /* silently reconnect */ };
+    return () => es.close();
+  }, [user?.tenantId]);
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);

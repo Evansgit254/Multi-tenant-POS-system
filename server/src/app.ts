@@ -22,6 +22,9 @@ import tablesRouter from './routes/tables';
 import procurementRouter from './routes/procurement';
 import shiftsRouter from './routes/shifts';
 import mpesaRouter from './routes/mpesa';
+import sseRouter from './routes/sse';
+import publicMenuRouter from './routes/publicMenu';
+import forecastRouter from './routes/forecast';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -60,6 +63,11 @@ app.use('/api/tenants/:tenantId/tables',      tablesRouter);
 app.use('/api/tenants/:tenantId/procurement', procurementRouter);
 app.use('/api/tenants/:tenantId/shifts',      shiftsRouter);
 app.use('/api/tenants/:tenantId/mpesa',       mpesaRouter);
+app.use('/api/tenants/:tenantId/sse',          sseRouter);
+app.use('/api/tenants/:tenantId/forecast',     forecastRouter);
+
+// ── Public routes (no auth) ───────────────────────────────────────
+app.use('/api/menu', publicMenuRouter);
 
 // ── Developer Test Overrides ──────────────────────────────────────
 app.get('/api/test/weekly-report', async (req, res) => {

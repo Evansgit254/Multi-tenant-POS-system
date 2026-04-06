@@ -62,6 +62,17 @@ router.get('/dashboard', async (req, res, next) => {
     const prevOrderCount = prevOrders.length;
     const prevAvgTicket = prevOrderCount > 0 ? prevRevenue / prevOrderCount : 0;
 
+    // Compute previous period hourly velocity for chart comparison
+    const prevOrdersHourly = await prisma.order.findMany({
+      where: { tenantId, status: 'COMPLETED', createdAt: prevFilter },
+      select: { total: true, createdAt: true }
+    });
+    const prevVelocity = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
+    prevOrdersHourly.forEach(o => {
+      const hour = new Date(o.createdAt).getHours();
+      prevVelocity[hour].count += Number(o.total);
+    });
+
     const calcDelta = (curr: number, prev: number): number => {
       if (prev === 0) return curr > 0 ? 100 : 0;
       return Math.round(((curr - prev) / prev) * 1000) / 10; // 1 decimal place
@@ -83,8 +94,9 @@ router.get('/dashboard', async (req, res, next) => {
     });
 
     // Also fetch cancelled orders separately (for discounts context, not revenue)
+    // DATA FIX: Use lowercase 'cancelled' which is how orders.ts writes it
     const cancelledOrders = await prisma.order.findMany({
-      where: { tenantId, status: 'CANCELLED', createdAt: dateFilter }
+      where: { tenantId, status: 'cancelled', createdAt: dateFilter }
     });
     const cancelledCount = cancelledOrders.length;
     const cancelledValue = cancelledOrders.reduce((sum, o) => sum + Number(o.total || o.subtotal), 0);
@@ -93,7 +105,8 @@ router.get('/dashboard', async (req, res, next) => {
     const totalTables = await prisma.table.count({ where: { tenantId } });
     const activeTables = await prisma.table.count({ where: { tenantId, status: 'occupied' } });
     const totalRooms = await prisma.room.count({ where: { tenantId } });
-    const activeRooms = await prisma.room.count({ where: { tenantId, status: 'OCCUPIED' } });
+    // DATA FIX: rooms are stored with lowercase 'occupied' status
+    const activeRooms = await prisma.room.count({ where: { tenantId, status: 'occupied' } });
     
     const occupancy = {
       tables: { total: totalTables, active: activeTables },
@@ -211,7 +224,7 @@ router.get('/dashboard', async (req, res, next) => {
       revenueByDay,
       revenueByMethod,
       lowStock,
-      salesVelocity: { current: currentVelocity, previous: Array.from({length: 24}, (_, i) => ({ hour: i, count: 0 })) },
+      salesVelocity: { current: currentVelocity, previous: prevVelocity },
       deltas: {
         revenue:  calcDelta(totalRevenue,  prevRevenue),
         orders:   calcDelta(totalOrders,   prevOrderCount),

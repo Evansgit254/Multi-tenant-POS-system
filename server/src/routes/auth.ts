@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { UAParser } from 'ua-parser-js';
 import prisma from '../lib/prisma';
 import { authenticate } from '../middleware/auth';
+import { sendEmail } from '../services/emailService';
 
 const router = Router();
 
@@ -19,6 +20,16 @@ const loginLimiter = rateLimit({
     return process.env.NODE_ENV === 'test' || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
   },
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// SECURITY FIX: Rate limit registrations to prevent tenant spam / resource exhaustion
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: { error: 'Too many accounts created from this IP. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -92,6 +103,7 @@ router.post(
 // POST /api/auth/register
 router.post(
   '/register',
+  registerLimiter, // SECURITY FIX: Prevent tenant spam
   [
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }),
@@ -183,7 +195,7 @@ router.post('/forgot-password', [body('email').isEmail()], async (req: Request, 
   const user = await prisma.user.findUnique({ where: { email } });
   
   if (user) {
-    const token = crypto.randomBytes(32).toString('hex'); // FORENSIC GAP FIX: strong cryptography
+    const token = crypto.randomBytes(32).toString('hex');
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -191,8 +203,17 @@ router.post('/forgot-password', [body('email').isEmail()], async (req: Request, 
         resetTokenExpiry: new Date(Date.now() + 3600000) // 1 hr
       }
     });
-    // In production, send via email provider. Here we just log it or simulate success.
-    console.log(`[SYS] Reset link for ${email}: http://localhost:5174/login?token=${token}`);
+    // FIX: Actually send the reset email instead of just logging it
+    const resetUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/login?token=${token}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 24px; max-width: 560px;">
+        <h2 style="color: #0f766e;">Reset Your Password</h2>
+        <p>You requested a password reset for your ServePoint account.</p>
+        <p>Click the link below to reset your password. This link expires in <strong>1 hour</strong>.</p>
+        <a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#0f766e;color:white;border-radius:8px;text-decoration:none;font-weight:bold;">Reset Password</a>
+        <p style="margin-top:24px;font-size:12px;color:#64748b;">If you didn't request this, please ignore this email.</p>
+      </div>`;
+    try { await sendEmail(user.email, 'Reset Your ServePoint Password', html); } catch {}
   }
   
   // Always return success to prevent email enumeration

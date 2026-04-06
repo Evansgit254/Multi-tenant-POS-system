@@ -106,6 +106,14 @@ router.get('/orders', async (req: Request, res: Response): Promise<void> => {
 // GET /api/tenants/:tenantId/reports/shift-summary
 router.get('/shift-summary', async (req: Request, res: Response): Promise<void> => {
   const { from, to } = req.query;
+
+  // DATA FIX: Validate date strings before passing to Prisma to prevent invalid Date objects
+  const isValidDate = (d: unknown) => typeof d === 'string' && !isNaN(Date.parse(d));
+  if ((from && !isValidDate(from)) || (to && !isValidDate(to))) {
+    res.status(400).json({ error: 'Invalid date format. Use ISO 8601 (e.g. 2026-04-01).' });
+    return;
+  }
+
   let toDate: Date | undefined;
   if (to) {
     toDate = new Date(to as string);

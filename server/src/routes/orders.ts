@@ -3,6 +3,8 @@ import { body, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import prisma from '../lib/prisma';
 import { authenticate, scopeTenant, authorize, requirePermission, PERMISSIONS } from '../middleware/auth';
+import { emitToTenant } from './sse';
+import { sendSMS, formatReceiptSMS } from '../services/smsService';
 
 const router = Router({ mergeParams: true });
 router.use(authenticate, scopeTenant);
@@ -243,6 +245,15 @@ router.post(
         return createdOrder;
       });
 
+      // Emit real-time SSE event so KDS and dashboards update instantly
+      emitToTenant(tenantId, 'order:new', {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        orderType: order.orderType,
+        total: order.total,
+        items: order.items.length
+      });
+
       res.status(201).json(order);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to create order' });
@@ -370,6 +381,16 @@ router.put('/:id/status', async (req: Request, res: Response): Promise<void> => 
       },
       data: { status }
     });
+
+    // Emit real-time notification when order is marked ready for pickup/delivery
+    if (status === 'ready') {
+      emitToTenant(req.params.tenantId, 'order:ready', {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        orderType: order.orderType
+      });
+    }
+
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update order status' });
@@ -430,6 +451,23 @@ router.post(
         where: { id, tenantId },
         data: { status: 'COMPLETED' }
       });
+
+      // SMS receipt — non-fatal, runs in background
+      if (order.guestId) {
+        const guest = await prisma.guest.findUnique({ where: { id: order.guestId } });
+        if (guest?.phone) {
+          const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true, currency: true } });
+          const orderItems = await prisma.orderItem.findMany({ where: { orderId: id }, select: { name: true, quantity: true } });
+          const smsText = formatReceiptSMS({
+            orderNumber: order.orderNumber,
+            items: orderItems,
+            total: order.total,
+            currency: tenant?.currency ?? 'KES',
+            tenantName: tenant?.name ?? 'ServePoint'
+          });
+          sendSMS(guest.phone, smsText).catch(() => {});
+        }
+      }
     }
 
     res.json(payment);

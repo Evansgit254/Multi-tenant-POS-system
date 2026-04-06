@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { authenticate, scopeTenant, authorize } from '../middleware/auth';
+import { sendEmail } from '../services/emailService';
 
 const router = Router({ mergeParams: true });
 // FORENSIC GAP FIX: Require manager or admin role to manage procurement
@@ -138,6 +139,34 @@ router.post('/purchase-orders', async (req: any, res) => {
     });
     
     res.json(po);
+
+    // Notify supplier by email (non-blocking)
+    if (po.supplier?.email) {
+      const lineItems = po.items.map((item: any) =>
+        `<tr>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;">${item.inventoryItem?.name || 'Item'}</td>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;">${item.quantity}</td>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;">KES ${item.unitPrice}</td>
+        </tr>`
+      ).join('');
+      const html = `
+        <div style="font-family:Arial,sans-serif;padding:24px;max-width:600px;">
+          <h2 style="color:#0f766e;">New Purchase Order — ${po.id.slice(-8).toUpperCase()}</h2>
+          <p>You have received a new purchase order. Please review the items below and confirm availability.</p>
+          <table style="width:100%;border-collapse:collapse;margin:1rem 0;">
+            <thead><tr style="background:#f8fafc;">
+              <th style="padding:8px;text-align:left;">Item</th>
+              <th style="padding:8px;text-align:right;">Quantity</th>
+              <th style="padding:8px;text-align:right;">Unit Price</th>
+            </tr></thead>
+            <tbody>${lineItems}</tbody>
+          </table>
+          <p style="font-size:1.1rem;font-weight:bold;">Total Amount: KES ${po.totalAmount.toFixed(2)}</p>
+          ${po.notes ? `<p><strong>Notes:</strong> ${po.notes}</p>` : ''}
+          <p style="margin-top:1.5rem;font-size:12px;color:#64748b;">Please respond to your buyer to confirm this order.</p>
+        </div>`;
+      sendEmail(po.supplier.email, `New Purchase Order #${po.id.slice(-8).toUpperCase()}`, html).catch(() => {});
+    }
   } catch (error) {
     console.error('Failed to create purchase order:', error);
     res.status(500).json({ error: 'Failed to create purchase order' });

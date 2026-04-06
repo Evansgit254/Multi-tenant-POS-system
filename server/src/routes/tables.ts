@@ -91,4 +91,53 @@ router.delete('/:id', authorize('hotel_admin', 'manager'), async (req: any, res)
   }
 });
 
+// POST /:id/generate-qr — Generate a unique QR token for this table
+// The QR code links to /menu/:slug?table=<qrToken>
+router.post('/:id/generate-qr', authorize('hotel_admin', 'manager'), async (req: any, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    const { randomUUID } = await import('crypto');
+    const qrToken = randomUUID();
+
+    const table = await prisma.table.update({
+      where: { id, tenantId },
+      data: { qrToken }
+    });
+
+    // Get tenant slug for building the URL
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true } });
+    const menuUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/menu/${tenant?.slug}?table=${qrToken}`;
+
+    res.json({ qrToken, menuUrl, table });
+  } catch (error) {
+    console.error('Failed to generate QR token:', error);
+    res.status(500).json({ error: 'Failed to generate QR token' });
+  }
+});
+
+// GET /:id/qr — Return the QR code as a PNG image
+router.get('/:id/qr', async (req: any, res) => {
+  try {
+    const { tenantId, id } = req.params;
+    const table = await prisma.table.findUnique({ where: { id, tenantId } });
+    if (!table || !table.qrToken) {
+      res.status(404).json({ error: 'No QR code generated for this table. Generate one first.' });
+      return;
+    }
+
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true } });
+    const menuUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/menu/${tenant?.slug}?table=${table.qrToken}`;
+
+    const QRCode = await import('qrcode');
+    const pngBuffer = await QRCode.toBuffer(menuUrl, { width: 300, margin: 2 });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `inline; filename="table-${table.number}-qr.png"`);
+    res.send(pngBuffer);
+  } catch (error) {
+    console.error('Failed to generate QR image:', error);
+    res.status(500).json({ error: 'Failed to generate QR image' });
+  }
+});
+
 export default router;

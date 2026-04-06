@@ -12,26 +12,28 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
   try {
     const token = auth.slice(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as UserPayload;
-    
-    // F-4 FIX: Check if user is still active in the database
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { isActive: true }
-    });
-    if (!user || !user.isActive) {
-      res.status(401).json({ error: 'Account is inactive or has been deactivated' });
-      return;
-    }
-
-    // NEW: Enforce Stateful Session Revocation
     const jti = (decoded as any).jti;
+
+    // PERF FIX: Merged 2 DB calls into 1 — user.isActive check + session validity check
+    // SECURITY FIX: Added expiresAt check so expired-but-active sessions are rejected
     if (jti) {
       const session = await prisma.session.findUnique({
         where: { token: jti },
-        select: { isActive: true }
+        select: { isActive: true, expiresAt: true, user: { select: { isActive: true } } }
       });
-      if (!session || !session.isActive) {
+      if (!session || !session.isActive || session.expiresAt < new Date()) {
         res.status(401).json({ error: 'Session was revoked or expired.' });
+        return;
+      }
+      if (!session.user?.isActive) {
+        res.status(401).json({ error: 'Account is inactive or has been deactivated.' });
+        return;
+      }
+    } else {
+      // Fallback for tokens without jti (legacy) — still check user active status
+      const user = await prisma.user.findUnique({ where: { id: decoded.id }, select: { isActive: true } });
+      if (!user || !user.isActive) {
+        res.status(401).json({ error: 'Account is inactive or has been deactivated' });
         return;
       }
     }

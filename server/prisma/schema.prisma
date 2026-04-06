@@ -192,6 +192,7 @@ model Table {
   y         Float    @default(0) // Floor plan Y position
   status    String   @default("available") // available, occupied, reserved
   isActive  Boolean  @default(true)
+  qrToken   String?  @unique   // Token for guest-facing menu QR code
   createdAt DateTime @default(now())
 
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)

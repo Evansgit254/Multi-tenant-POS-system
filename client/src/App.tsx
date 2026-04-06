@@ -20,6 +20,8 @@ import SuperAdmin from './views/SuperAdmin';
 import FloorPlan from './views/FloorPlan';
 import Procurement from './views/Procurement';
 import Reports from './views/Reports';
+import Analytics from './views/Analytics';
+import GuestMenu from './views/GuestMenu';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -56,6 +58,8 @@ const App: React.FC = () => {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            {/* Public route — no auth required */}
+            <Route path="/menu/:slug" element={<GuestMenu />} />
             
             <Route path="/*" element={
               <ProtectedRoute>
@@ -104,6 +108,7 @@ const App: React.FC = () => {
                       <Route path="/floor-plan" element={<FloorPlan />} />
                       <Route path="/procurement" element={<Procurement />} />
                       <Route path="/reports" element={<Reports />} />
+                      <Route path="/analytics" element={<Analytics />} />
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                   </main>
