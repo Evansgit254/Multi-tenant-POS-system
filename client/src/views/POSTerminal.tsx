@@ -33,7 +33,7 @@ const POSTerminal: React.FC = () => {
   useEffect(() => {
     if (!user?.tenantId) return;
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
-    const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+    const API_BASE = (import.meta as any).env?.VITE_API_URL || window.location.origin;
     // SSE connection with JWT token as query param for EventSource (no custom headers)
     const es = new EventSource(`${API_BASE}/api/tenants/${user.tenantId}/sse?token=${token}`);
 

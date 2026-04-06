@@ -44,7 +44,7 @@ const GuestMenu: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('');
   const [waiterCalled, setWaiterCalled] = useState(false);
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_BASE = (import.meta as any).env?.VITE_API_URL || window.location.origin;
 
   useEffect(() => {
     const fetchMenu = async () => {

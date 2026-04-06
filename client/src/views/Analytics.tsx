@@ -52,7 +52,11 @@ const Analytics: React.FC = () => {
         setLoading(false);
       }
     };
-    if (user?.tenantId) fetchData();
+    if (user?.tenantId) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
   }, [user?.tenantId, range]);
 
   // Fetch AI forecast once on mount
@@ -68,7 +72,11 @@ const Analytics: React.FC = () => {
         setForecastLoading(false);
       }
     };
-    if (user?.tenantId) fetchForecast();
+    if (user?.tenantId) {
+      fetchForecast();
+    } else {
+      setForecastLoading(false);
+    }
   }, [user?.tenantId]);
 
   const cur = tenant?.currency || 'KES';
