@@ -49,4 +49,4 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://mumo-pos-server.onrender.com
+        value: https://mumo-pos-server.onrender.com/api
