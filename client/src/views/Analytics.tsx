@@ -4,6 +4,10 @@ import {
   DollarSign, ShoppingCart, Tag, CreditCard, Banknote, Smartphone, Bed,
   ArrowUpRight, Sparkles
 } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
+  ComposedChart
+} from 'recharts';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -93,6 +97,24 @@ const Analytics: React.FC = () => {
     cash: Banknote, card: CreditCard, mpesa: Smartphone, room_charge: Bed
   };
 
+  const chartData = data?.revenueByDay?.map((d: any) => ({
+    name: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+    sales: d.revenue
+  })) || [];
+
+  const combinedForecast = forecast ? [
+    ...forecast.actuals.slice(-7).map((d: any) => ({
+      name: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+      actual: d.revenue,
+      predict: null
+    })),
+    ...forecast.forecast.map((d: any) => ({
+      name: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+      actual: null,
+      predict: d.predictedRevenue
+    }))
+  ] : [];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
       {/* Header */}
@@ -150,29 +172,20 @@ const Analytics: React.FC = () => {
               <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <TrendingUp size={18} style={{ color: '#10b981' }} /> Revenue Trend
               </h3>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '180px', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-                {data.revenueByDay.map((day, i) => {
-                  const maxRev = Math.max(...data.revenueByDay.map(d => d.revenue), 1);
-                  const heightPct = (day.revenue / maxRev) * 100;
-                  return (
-                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', height: '100%', position: 'relative' }} className="group">
-                      <div style={{ position: 'absolute', bottom: 'calc(100% + 4px)', fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700, whiteSpace: 'nowrap', opacity: 0, transition: 'opacity 0.15s' }} className="bar-tooltip">
-                        {cur} {day.revenue.toLocaleString()}
-                      </div>
-                      <div style={{ width: '100%', height: `${heightPct}%`, minHeight: '4px', background: 'linear-gradient(to top, var(--accent), #fbbf24)', borderRadius: '4px 4px 0 0', transition: 'opacity 0.2s', cursor: 'pointer' }}
-                        onMouseEnter={e => { const t = e.currentTarget.previousElementSibling as HTMLElement; if (t) t.style.opacity = '1'; }}
-                        onMouseLeave={e => { const t = e.currentTarget.previousElementSibling as HTMLElement; if (t) t.style.opacity = '0'; }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', overflowX: 'hidden' }}>
-                {data.revenueByDay.map((day, i) => (
-                  <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                    {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
-                  </div>
-                ))}
+              <div style={{ width: '100%', height: '220px', marginTop: '1rem' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--accent)" />
+                        <stop offset="95%" stopColor="#fbbf24" />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} dy={10} />
+                    <RechartsTooltip cursor={{ fill: 'var(--bg-deep)' }} contentStyle={{ background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border)' }} formatter={(v: any) => [`${cur} ${Number(v).toLocaleString()}`, 'Revenue']} />
+                    <Bar dataKey="sales" fill="url(#colorBar)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
@@ -287,29 +300,21 @@ const Analytics: React.FC = () => {
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No forecast data available yet. Needs at least 7 days of order history.</p>
             ) : (
               <div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '160px', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-                  {/* Actuals — last 7 days sampled */}
-                  {forecast.actuals.slice(-7).map((day, i) => {
-                    const allVals = [...forecast.actuals.slice(-7).map(d => d.revenue), ...forecast.forecast.map(d => d.predictedRevenue)];
-                    const max = Math.max(...allVals, 1);
-                    const h = (day.revenue / max) * 100;
-                    return (
-                      <div key={`a${i}`} title={`Actual: ${cur} ${day.revenue.toLocaleString()}\n${day.date}`}
-                        style={{ flex: 1, height: `${h}%`, minHeight: '4px', background: 'var(--border)', borderRadius: '4px 4px 0 0', transition: 'opacity 0.2s', cursor: 'default' }} />
-                    );
-                  })}
-                  {/* Separator */}
-                  <div style={{ width: '2px', height: '100%', background: 'rgba(99,102,241,0.3)', borderLeft: '2px dashed rgba(99,102,241,0.5)', flexShrink: 0 }} />
-                  {/* Forecast — next 7 days */}
-                  {forecast.forecast.map((day, i) => {
-                    const allVals = [...forecast.actuals.slice(-7).map(d => d.revenue), ...forecast.forecast.map(d => d.predictedRevenue)];
-                    const max = Math.max(...allVals, 1);
-                    const h = (day.predictedRevenue / max) * 100;
-                    return (
-                      <div key={`f${i}`} title={`Forecast: ${cur} ${day.predictedRevenue.toLocaleString()}\n${day.date}`}
-                        style={{ flex: 1, height: `${h}%`, minHeight: '4px', background: 'linear-gradient(to top, #6366f1, #a5b4fc)', borderRadius: '4px 4px 0 0', opacity: 0.85, cursor: 'default', border: '1px dashed rgba(99,102,241,0.4)', borderBottom: 'none' }} />
-                    );
-                  })}
+                <div style={{ width: '100%', height: '180px', marginTop: '0.5rem' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={combinedForecast} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorPredict" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#818cf8" />
+                          <stop offset="95%" stopColor="#4f46e5" />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                      <RechartsTooltip contentStyle={{ background: '#1e293b', color: 'white', borderRadius: '12px', border: '1px solid #334155' }} />
+                      <Bar dataKey="actual" name="Actual Revenue" fill="var(--border)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="predict" name="Predicted Projection" fill="url(#colorPredict)" radius={[4, 4, 0, 0]} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>

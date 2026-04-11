@@ -2,11 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
-import {
-  TrendingUp, ArrowUpRight, ArrowDownRight,
-  CheckCircle, Loader2, Users, DollarSign, Activity,
-  Sparkles, AlertTriangle, Wallet, Smartphone, Target, Clock, AlertCircle, CreditCard
+import { 
+  TrendingUp, ArrowUpRight, ArrowDownRight, 
+  CheckCircle, Loader2, Users, DollarSign, Activity, 
+  Sparkles, AlertTriangle, Wallet, Smartphone, Target, Clock, AlertCircle, CreditCard 
 } from 'lucide-react';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell 
+} from 'recharts';
 
 const RANGES = ['Yesterday', 'Today', 'Week', 'Month', 'Year'];
 const RANGE_MAP: Record<string, string> = {
@@ -125,12 +129,20 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const lineData: number[] = stats?.revenueByDay?.length ? stats.revenueByDay.map((d: any) => d.revenue) : Array(13).fill(0);
-  const maxSale = Math.max(...lineData, 1000);
-  const yScale = maxSale * 1.2;
-
   const donut = stats?.revenueDonut || { dineIn: 0, takeaway: 0, delivery: 0 };
+  const donutData = [
+    { name: 'Dine-In', value: donut.dineIn, color: '#8b5cf6' }, // fallback for var(--accent) if needed
+    { name: 'Takeaway', value: donut.takeaway, color: '#10b981' },
+    { name: 'Room Service', value: donut.delivery, color: '#3b82f6' }
+  ];
   const dTotal = donut.dineIn + donut.takeaway + donut.delivery || 1;
+
+  const chartData = stats?.revenueByDay?.length 
+    ? stats.revenueByDay.map((d: any) => ({
+        name: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+        sales: d.revenue
+      }))
+    : Array.from({ length: 7 }).map((_, i) => ({ name: `Day ${i}`, sales: 0 }));
 
   const employees = stats?.bestEmployees || [];
   const dishes = stats?.trendingDishes || [];
@@ -233,32 +245,46 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          <div style={{ flex: 1, minHeight: '340px', position: 'relative' }}>
-             {/* Y-Axis Metrics */}
-             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', paddingBottom: '2.5rem' }}>
-              <span>{Math.round(yScale / 1000)}k</span>
-              <span>{Math.round((yScale * 0.5) / 1000)}k</span>
-              <span>0</span>
-            </div>
-            
-            {/* Soft Grid Lines */}
-            <div style={{ position: 'absolute', left: '3.5rem', right: 0, top: 0, bottom: '2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', borderBottom: '2px dashed var(--border)' }}>
-               <div style={{ borderTop: '2px dashed var(--border)', opacity: 0.5, height: '1px', width: '100%' }} />
-               <div style={{ borderTop: '2px dashed var(--border)', opacity: 0.5, height: '1px', width: '100%' }} />
-               <div style={{ height: '1px' }} />
-            </div>
-
-            {/* Core SVG Render */}
-            <div style={{ position: 'absolute', left: '3.5rem', right: 0, top: 0, bottom: '2.5rem' }}>
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                {/* Glowing Base Line */}
-                <polyline
-                  points={lineData.map((v, i) => `${(i / (lineData.length - 1)) * 100},${100 - (v / yScale) * 100}`).join(' ')}
-                  fill="none" stroke="var(--accent)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ filter: 'drop-shadow(0 16px 20px var(--accent-glow)) drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
+          <div style={{ flex: 1, minHeight: '340px', position: 'relative', marginLeft: '-20px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12, fontWeight: 700 }}
+                  dy={10}
                 />
-              </svg>
-            </div>
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12, fontWeight: 700 }}
+                  tickFormatter={val => `${val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val}`}
+                />
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
+                <Tooltip 
+                  contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ color: 'var(--text-primary)', fontWeight: 800 }}
+                  labelStyle={{ color: 'var(--text-muted)', fontWeight: 700, marginBottom: '4px' }}
+                  formatter={(value: any) => [`${tenant?.currency} ${Number(value).toLocaleString()}`, 'Revenue']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="sales" 
+                  stroke="var(--accent)" 
+                  strokeWidth={4} 
+                  fillOpacity={1} 
+                  fill="url(#colorSales)" 
+                  activeDot={{ r: 6, fill: 'var(--accent)', stroke: 'white', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -273,28 +299,42 @@ const Dashboard: React.FC = () => {
           <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
             <Sparkles size={24} color="var(--accent)" /> Channel Distribution
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', position: 'relative', zIndex: 1 }}>
-             {[
-                { label: 'Dine-In', value: donut.dineIn, color: 'var(--accent)', icon: '🍽️' },
-                { label: 'Takeaway', value: donut.takeaway, color: '#10b981', icon: '🛍️' },
-                { label: 'Room Service', value: donut.delivery, color: '#3b82f6', icon: '🏨' },
-              ].map((ch, i) => {
-                const pct = (ch.value / dTotal) * 100;
-                return (
-                  <div key={i} className="group hover-lift">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <span style={{ fontSize: '1.6rem', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}>{ch.icon}</span>
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>{ch.label}</span>
-                       </div>
-                       <span style={{ fontSize: '1.25rem', fontWeight: 900 }}>{Math.round(pct)}%</span>
-                    </div>
-                    <div style={{ height: '12px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' }}>
-                       <div style={{ height: '100%', width: `${pct}%`, background: ch.color, borderRadius: '99px', transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 0 10px rgba(255,255,255,0.2)' }} />
-                    </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', zIndex: 1, minHeight: '300px' }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={donutData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {donutData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px' }}
+                  itemStyle={{ color: 'white', fontWeight: 800 }}
+                  formatter={(value: any) => [`${Math.round((Number(value) / dTotal) * 100)}%`, 'Volume']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 1rem' }}>
+              {donutData.map((ch, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: ch.color, boxShadow: `0 0 8px ${ch.color}` }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{ch.name}</span>
                   </div>
-                );
-              })}
+                  <span style={{ fontSize: '1rem', fontWeight: 900, marginTop: '4px' }}>{Math.round((ch.value / dTotal) * 100)}%</span>
+                </div>
+              ))}
+            </div>
           </div>
           
           <div style={{ marginTop: 'auto', paddingTop: '4rem', position: 'relative', zIndex: 1 }}>
