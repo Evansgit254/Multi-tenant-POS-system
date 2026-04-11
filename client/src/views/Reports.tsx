@@ -153,7 +153,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* TABS MENU */}
-      <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-elevated)', padding: '0.4rem', borderRadius: '16px', border: '1px solid var(--border)', width: 'fit-content', boxShadow: 'var(--shadow-sm)', overflowX: 'auto', maxWidth: '100%' }}>
+      <div style={{ display: 'flex', gap: '0.25rem', background: 'white', padding: '0.4rem', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.06)', width: 'fit-content', boxShadow: 'var(--shadow-card)', overflowX: 'auto', maxWidth: '100%' }}>
         {[
           { id: 'visual', label: 'Overview Charts', icon: BarChart4 },
           { id: 'pnl', label: 'Executive P&L', icon: Activity },
@@ -166,12 +166,12 @@ const Reports: React.FC = () => {
             key={t.id} 
             onClick={() => setTab(t.id as Tab)} 
             style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem',
-              borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 1.15rem',
+              borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, border: 'none', cursor: 'pointer',
               whiteSpace: 'nowrap', transition: 'all 0.2s',
-              background: tab === t.id ? 'var(--bg-inverted)' : 'transparent',
-              color: tab === t.id ? 'var(--text-inverted)' : 'var(--text-secondary)',
-              boxShadow: tab === t.id ? 'var(--shadow-md)' : 'none'
+              background: tab === t.id ? 'var(--accent)' : 'transparent',
+              color: tab === t.id ? 'white' : 'var(--text-secondary)',
+              boxShadow: tab === t.id ? '0 2px 8px rgba(184,134,11,0.25)' : 'none'
             }}
           >
             <t.icon size={16} /> {t.label}
@@ -181,7 +181,7 @@ const Reports: React.FC = () => {
 
       {/* DATE FILTERS (Not shown for static tabs) */}
       {tab !== 'inventory' && tab !== 'visual' && tab !== 'pnl' && (
-        <div style={{ display: 'flex', gap: '1rem', padding: '1rem 1.5rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', gap: '1rem', padding: '0.875rem 1.25rem', background: 'white', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '14px', boxShadow: 'var(--shadow-card)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Date Range From</label>
             <input type="date" className="form-input" style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem' }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
@@ -204,30 +204,39 @@ const Reports: React.FC = () => {
           {tab === 'pnl' && pnlReport && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.4s ease-out' }}>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-                <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderLeft: '4px solid #10b981' }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Inflow (30d)</p>
-                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', marginTop: '0.5rem' }}>{tenant?.currency} {pnlReport.totalRevenue.toLocaleString()}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                  <div className="kpi-accent-bar" style={{ background: '#10b981' }} />
+                  <p className="section-label">30-Day Inflow</p>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Total Revenue</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#059669' }}>{tenant?.currency} {pnlReport.totalRevenue.toLocaleString()}</p>
                 </div>
                 
-                <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-elevated)', borderLeft: '4px solid #f43f5e' }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Outflow (30d)</p>
-                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#f43f5e', marginTop: '0.5rem' }}>{tenant?.currency} {pnlReport.totalExpenses.toLocaleString()}</p>
+                <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                  <div className="kpi-accent-bar" style={{ background: '#f43f5e' }} />
+                  <p className="section-label">30-Day Outflow</p>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Total Expenses</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#e11d48' }}>{tenant?.currency} {pnlReport.totalExpenses.toLocaleString()}</p>
                 </div>
 
-                <div className="card" style={{ padding: '1.5rem', background: pnlReport.netMargin > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)', borderColor: pnlReport.netMargin > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)' }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Net Profit Margin</p>
-                  <p style={{ fontSize: '2rem', fontWeight: 900, color: pnlReport.netMargin > 0 ? '#10b981' : '#f43f5e', marginTop: '0.5rem' }}>{Math.round(pnlReport.netMargin)}%</p>
+                <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                  <div className="kpi-accent-bar" style={{ background: pnlReport.netMargin > 0 ? '#10b981' : '#f43f5e' }} />
+                  <p className="section-label">Profitability</p>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Net Profit Margin</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: pnlReport.netMargin > 0 ? '#059669' : '#e11d48' }}>{Math.round(pnlReport.netMargin)}%</p>
                 </div>
                 
-                <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-elevated)' }}>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cost of Goods (Assets on Hand)</p>
-                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0ea5e9', marginTop: '0.5rem' }}>{tenant?.currency} {pnlReport.totalAssetsOnHand.toLocaleString()}</p>
+                <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                  <div className="kpi-accent-bar" style={{ background: '#0ea5e9' }} />
+                  <p className="section-label">Asset Value</p>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Cost of Goods on Hand</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0ea5e9' }}>{tenant?.currency} {pnlReport.totalAssetsOnHand.toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="card" style={{ padding: '2rem', overflowX: 'auto' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className="dashboard-card" style={{ padding: '2rem', overflowX: 'auto' }}>
+                <p className="section-label">Financial Performance</p>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
                   <Activity size={20} style={{ color: 'var(--accent)' }}/> 30-Day Revenue vs. Expenses
                 </h3>
                 
@@ -298,21 +307,23 @@ const Reports: React.FC = () => {
                   { label: 'Discounts', value: `${tenant?.currency} ${Math.round(analyticsData.totalDiscounts).toLocaleString()}`, icon: Tag, color: '#f43f5e', bg: '#fce7f3' },
                   { label: 'New Guests', value: analyticsData.newGuests.toLocaleString(), icon: Award, color: '#f97316', bg: '#ffedd5' }
                 ].map((kpi, i) => (
-                  <div key={i} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '2.75rem', height: '2.75rem', borderRadius: '10px', background: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <kpi.icon size={20} style={{ color: kpi.color }} />
+                  <div key={i} className="dashboard-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="kpi-accent-bar" style={{ background: kpi.color }} />
+                    <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '10px', background: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <kpi.icon size={18} style={{ color: kpi.color }} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{kpi.label}</p>
-                      <p style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</p>
+                      <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{kpi.label}</p>
+                      <p style={{ fontSize: '1.05rem', fontWeight: 800, marginTop: '0.15rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{kpi.value}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem' }}>
-                <div className="card" style={{ padding: '1.5rem', flex: 2 }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><TrendingUp size={18} style={{ color: '#10b981' }} /> 30-Day Revenue Trend</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem' }}>
+                <div className="dashboard-card" style={{ padding: '1.5rem', flex: 2 }}>
+                  <p className="section-label">Revenue Timeline</p>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}><TrendingUp size={18} style={{ color: '#10b981' }} /> 30-Day Revenue Trend</h3>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '180px', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
                     {analyticsData.revenueByDay.map((day, i) => {
                       const maxRev = Math.max(...analyticsData.revenueByDay.map(d => d.revenue), 1);
@@ -322,8 +333,9 @@ const Reports: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="card" style={{ padding: '1.5rem', flex: 1 }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Award size={18} style={{ color: '#f59e0b' }} /> Top Selling Items</h3>
+                <div className="dashboard-card" style={{ padding: '1.5rem', flex: 1 }}>
+                  <p className="section-label">Best Sellers</p>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}><Award size={18} style={{ color: '#f59e0b' }} /> Top Selling Items</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                     {analyticsData.topItems.slice(0, 5).map((item, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem', background: 'var(--bg-deep)', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -342,7 +354,7 @@ const Reports: React.FC = () => {
 
           {/* TAB: TRANSACTION HISTORY */}
           {tab === 'history' && (
-            <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="dashboard-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ position: 'relative', width: '100%', maxWidth: '320px' }}>
                 <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={18} />
                 <input type="text" placeholder="Search by order # or room..." className="form-input" style={{ paddingLeft: '3rem' }} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
@@ -445,20 +457,26 @@ const Reports: React.FC = () => {
 
           {/* TAB: TAX & COMPLIANCE */}
           {tab === 'taxes' && taxReport && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-              <div className="card" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-border)', display: 'flex', flexDirection: 'column', padding: '1.5rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Taxable Sales</span>
-                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{tenant?.currency} {taxReport.taxableSales.toLocaleString()}</span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)', marginTop: '1rem' }}>Across {taxReport.orderCount} orders</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+              <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                <div className="kpi-accent-bar" style={{ background: 'var(--accent)' }} />
+                <p className="section-label">Taxable Base</p>
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Taxable Sales</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)' }}>{tenant?.currency} {taxReport.taxableSales.toLocaleString()}</p>
+                <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)', marginTop: '0.75rem' }}>Across {taxReport.orderCount} orders</p>
               </div>
-              <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: '1.5rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Tax Rate (Configured)</span>
-                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{tenant?.taxRate}%</span>
+              <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                <div className="kpi-accent-bar" style={{ background: '#6366f1' }} />
+                <p className="section-label">Configuration</p>
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Tax Rate</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: '#6366f1' }}>{tenant?.taxRate}%</p>
               </div>
-              <div className="card" style={{ background: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.2)', display: 'flex', flexDirection: 'column', padding: '1.5rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Total Tax Collected</span>
-                <span style={{ fontSize: '2rem', fontWeight: 900, color: '#16a34a' }}>{tenant?.currency} {taxReport.taxCollected.toLocaleString()}</span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#16a34a', marginTop: '1rem' }}>Liability for selected period</span>
+              <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+                <div className="kpi-accent-bar" style={{ background: '#10b981' }} />
+                <p className="section-label">Government Liability</p>
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total Tax Collected</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: '#059669' }}>{tenant?.currency} {taxReport.taxCollected.toLocaleString()}</p>
+                <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginTop: '0.75rem' }}>Liability for selected period</p>
               </div>
             </div>
           )}
@@ -466,15 +484,17 @@ const Reports: React.FC = () => {
           {/* TAB: INVENTORY VALUATION */}
           {tab === 'inventory' && inventoryVal && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div className="card" style={{ background: 'rgba(56, 189, 248, 0.1)', borderColor: 'rgba(56, 189, 248, 0.2)', padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div className="dashboard-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                <div className="kpi-accent-bar" style={{ background: '#0ea5e9' }} />
                 <div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.25rem' }}>Total Assets on Hand (COGS)</h3>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Current value of all raw materials held in inventory.</p>
+                  <p className="section-label">Cost of Goods</p>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.15rem', color: 'var(--text-primary)' }}>Total Assets on Hand (COGS)</h3>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Current value of all raw materials in inventory.</p>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0ea5e9' }}>{tenant?.currency} {inventoryVal.totalValuation.toLocaleString()}</div>
+                <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0ea5e9' }}>{tenant?.currency} {inventoryVal.totalValuation.toLocaleString()}</div>
               </div>
 
-              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="dashboard-card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ margin: 0 }}>
                   <thead>
                     <tr>

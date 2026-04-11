@@ -153,60 +153,63 @@ const Analytics: React.FC = () => {
           {/* KPI Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             {kpis.map((kpi, i) => (
-              <div key={i} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: '2.75rem', height: '2.75rem', borderRadius: '10px', background: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <kpi.icon size={20} style={{ color: kpi.color }} />
+              <div key={i} className="dashboard-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="kpi-accent-bar" style={{ background: kpi.color }} />
+                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '10px', background: kpi.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <kpi.icon size={18} style={{ color: kpi.color }} />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{kpi.label}</p>
-                  <p style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kpi.value}</p>
+                  <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{kpi.label}</p>
+                  <p style={{ fontSize: '1.05rem', fontWeight: 800, marginTop: '0.15rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{kpi.value}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Revenue Trend + Top Items */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem' }}>
             {/* Revenue Bar Chart */}
-            <div className="card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+              <p className="section-label">7-Day Trend</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
                 <TrendingUp size={18} style={{ color: '#10b981' }} /> Revenue Trend
               </h3>
-              <div style={{ width: '100%', height: '220px', marginTop: '1rem' }}>
+              <div style={{ width: '100%', height: '220px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--accent)" />
+                        <stop offset="5%" stopColor="#b8860b" />
                         <stop offset="95%" stopColor="#fbbf24" />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} dy={10} />
-                    <RechartsTooltip cursor={{ fill: 'var(--bg-deep)' }} contentStyle={{ background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border)' }} formatter={(v: any) => [`${cur} ${Number(v).toLocaleString()}`, 'Revenue']} />
-                    <Bar dataKey="sales" fill="url(#colorBar)" radius={[4, 4, 0, 0]} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-muted)', fontWeight: 600 }} dy={8} />
+                    <RechartsTooltip cursor={{ fill: 'var(--bg-deep)' }} contentStyle={{ background: 'white', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 20px rgba(0,0,0,0.07)', padding: '8px 12px' }} formatter={(v: any) => [`${cur} ${Number(v).toLocaleString()}`, 'Revenue']} />
+                    <Bar dataKey="sales" fill="url(#colorBar)" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* Top Items */}
-            <div className="card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+              <p className="section-label">Best Sellers</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
                 <Award size={18} style={{ color: '#f59e0b' }} /> Top Selling Items
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {data.topItems.length === 0 ? (
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 0' }}>No sales data yet.</p>
                 ) : data.topItems.slice(0, 6).map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <div style={{ width: '1.75rem', height: '1.75rem', borderRadius: '6px', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)', flexShrink: 0 }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem', background: 'var(--bg-deep)', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                    <div style={{ width: '1.6rem', height: '1.6rem', borderRadius: '6px', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent)', flexShrink: 0 }}>
                       #{i + 1}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{item.quantity} units</p>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{item.name}</p>
+                      <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{item.quantity} units sold</p>
                     </div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent)', whiteSpace: 'nowrap' }}>
                       {cur} {Math.round(item.revenue).toLocaleString()}
                     </span>
                   </div>
@@ -218,8 +221,9 @@ const Analytics: React.FC = () => {
           {/* Payment Methods + Low Stock */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             {/* Revenue by payment method */}
-            <div className="card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+              <p className="section-label">Payment Breakdown</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
                 <CreditCard size={18} style={{ color: '#6366f1' }} /> Revenue by Payment Method
               </h3>
               {Object.keys(data.revenueByMethod).length === 0 ? (
@@ -250,10 +254,11 @@ const Analytics: React.FC = () => {
             </div>
 
             {/* Low Stock Warnings */}
-            <div className="card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: data.lowStock.length > 0 ? '#f43f5e' : '#10b981' }} />
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <PackageMinus size={18} style={{ color: data.lowStock.length > 0 ? '#f43f5e' : '#10b981' }} />
+            <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+              <div className="kpi-accent-bar" style={{ background: data.lowStock.length > 0 ? '#f43f5e' : '#10b981' }} />
+              <p className="section-label">Stock Status</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: data.lowStock.length > 0 ? '#e11d48' : '#059669' }}>
+                <PackageMinus size={18} />
                 {data.lowStock.length > 0 ? 'Critical Stock Warnings' : 'Inventory Healthy'}
               </h3>
               {data.lowStock.length === 0 ? (
@@ -282,12 +287,15 @@ const Analytics: React.FC = () => {
             </div>
           </div>
           {/* AI 7-Day Sales Forecast */}
-          <div className="card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #0f766e, #6366f1)' }} />
+          <div className="dashboard-card" style={{ padding: '1.5rem' }}>
+            <div className="kpi-accent-bar" style={{ background: 'linear-gradient(90deg, #0f766e, #6366f1)' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', marginTop: '0.25rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={18} style={{ color: '#6366f1' }} /> AI 7-Day Revenue Forecast
-              </h3>
+              <div>
+                <p className="section-label">AI Projections</p>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
+                  <Sparkles size={18} style={{ color: '#6366f1' }} /> AI 7-Day Revenue Forecast
+                </h3>
+              </div>
               <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.2rem 0.6rem', background: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '99px' }}>
                 Linear Regression
               </span>
@@ -309,8 +317,8 @@ const Analytics: React.FC = () => {
                           <stop offset="95%" stopColor="#4f46e5" />
                         </linearGradient>
                       </defs>
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
-                      <RechartsTooltip contentStyle={{ background: '#1e293b', color: 'white', borderRadius: '12px', border: '1px solid #334155' }} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600 }} />
+                      <RechartsTooltip contentStyle={{ background: 'white', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 20px rgba(0,0,0,0.07)' }} itemStyle={{ color: 'var(--text-primary)', fontWeight: 700 }} />
                       <Bar dataKey="actual" name="Actual Revenue" fill="var(--border)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="predict" name="Predicted Projection" fill="url(#colorPredict)" radius={[4, 4, 0, 0]} />
                     </ComposedChart>
