@@ -8,6 +8,7 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../hooks/useCart';
 import { useToast } from '../context/ToastContext';
+import { printReceipt, printKOT } from '../components/ReceiptPrinter';
 
 interface Category {
   id: string;
@@ -155,7 +156,7 @@ const POSTerminal: React.FC = () => {
     
     setCheckoutStatus('processing');
     try {
-      await api.post(`/tenants/${user?.tenantId}/orders`, {
+      const res = await api.post(`/tenants/${user?.tenantId}/orders`, {
         items: items.map(i => ({ menuItemId: i.id, quantity: i.quantity })),
         orderType: method === 'room_charge' ? 'room_service' : 'dine_in',
         tableRef: tableRef || undefined,
@@ -166,7 +167,38 @@ const POSTerminal: React.FC = () => {
         discountFixed,
         discountPercent
       });
+      const order = res.data;
+      
       setCheckoutStatus('success');
+      
+      const pMethod = method === 'room_charge' ? 'Room Charge' : method;
+      printReceipt({
+        hotelName: tenant?.name || 'Mumo Forge POS',
+        currency: tenant?.currency || 'KES',
+        receiptFooter: tenant?.receiptFooter || 'Thank you!',
+        orderNumber: order.orderNumber,
+        cashierName: user?.name || 'Cashier',
+        createdAt: order.createdAt,
+        tableRef: tableRef || undefined,
+        guestName: selectedGuest?.firstName ? `${selectedGuest.firstName} ${selectedGuest.lastName}` : undefined,
+        items: order.items.map((it: any) => ({ name: it.menuItem.name, quantity: it.quantity, price: it.menuItem.price, subtotal: it.quantity * it.menuItem.price })),
+        subtotal,
+        taxAmount: tax,
+        taxRate,
+        discount: currentDiscount,
+        total,
+        paymentMethod: pMethod
+      });
+      
+      printKOT({
+        hotelName: tenant?.name || 'Mumo Forge POS',
+        orderNumber: order.orderNumber,
+        tableRef: tableRef || undefined,
+        cashierName: user?.name || 'Cashier',
+        createdAt: order.createdAt,
+        items: order.items.map((it: any) => ({ name: it.menuItem.name, quantity: it.quantity }))
+      });
+
       setTimeout(() => {
         clearCart();
         setCheckoutStatus('idle');
@@ -609,6 +641,36 @@ const POSTerminal: React.FC = () => {
                             if (check.data.status === 'completed') {
                               clearInterval(poll);
                               setMpesaStatus('success');
+                              
+                              const fetchOrder = await api.get(`/tenants/${user?.tenantId}/orders/${orderId}`);
+                              const fullOrder = fetchOrder.data;
+                              
+                              printReceipt({
+                                hotelName: tenant?.name || 'Mumo Forge POS',
+                                currency: tenant?.currency || 'KES',
+                                receiptFooter: tenant?.receiptFooter || 'Thank you!',
+                                orderNumber: fullOrder.orderNumber,
+                                cashierName: user?.name || 'Cashier',
+                                createdAt: fullOrder.createdAt,
+                                tableRef: tableRef || undefined,
+                                guestName: selectedGuest?.firstName ? `${selectedGuest.firstName} ${selectedGuest.lastName}` : undefined,
+                                items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price, subtotal: i.quantity * i.price })),
+                                subtotal,
+                                taxAmount: tax,
+                                taxRate,
+                                discount: currentDiscount,
+                                total,
+                                paymentMethod: 'M-PESA STK'
+                              });
+                              printKOT({
+                                hotelName: tenant?.name || 'Mumo Forge POS',
+                                orderNumber: fullOrder.orderNumber,
+                                tableRef: tableRef || undefined,
+                                cashierName: user?.name || 'Cashier',
+                                createdAt: fullOrder.createdAt,
+                                items: items.map(i => ({ name: i.name, quantity: i.quantity }))
+                              });
+
                               setTimeout(() => { clearCart(); setShowMpesaModal(false); setMpesaPhone(''); setMpesaStatus('idle'); setIsCheckingOut(false); setPendingOrderId(null); }, 2500);
                             }
                           } catch { /* continue polling */ }
@@ -688,7 +750,7 @@ const POSTerminal: React.FC = () => {
                   setCheckoutStatus('processing');
                   setShowManualMpesaModal(false);
                   try {
-                    await api.post(`/tenants/${user?.tenantId}/orders`, {
+                    const res = await api.post(`/tenants/${user?.tenantId}/orders`, {
                       items: items.map(i => ({ menuItemId: i.id, quantity: i.quantity })),
                       orderType: tableRef ? 'dine_in' : 'takeaway',
                       tableRef: tableRef || undefined,
@@ -697,7 +759,36 @@ const POSTerminal: React.FC = () => {
                       redeemPoints, discountFixed, discountPercent,
                       mpesaReference: mpesaRef
                     });
+                    const order = res.data;
                     setCheckoutStatus('success');
+                    
+                    printReceipt({
+                      hotelName: tenant?.name || 'Mumo Forge POS',
+                      currency: tenant?.currency || 'KES',
+                      receiptFooter: tenant?.receiptFooter || 'Thank you!',
+                      orderNumber: order.orderNumber,
+                      cashierName: user?.name || 'Cashier',
+                      createdAt: order.createdAt,
+                      tableRef: tableRef || undefined,
+                      guestName: selectedGuest?.firstName ? `${selectedGuest.firstName} ${selectedGuest.lastName}` : undefined,
+                      items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price, subtotal: i.quantity * i.price })),
+                      subtotal,
+                      taxAmount: tax,
+                      taxRate,
+                      discount: currentDiscount,
+                      total,
+                      paymentMethod: 'M-PESA'
+                    });
+                    
+                    printKOT({
+                      hotelName: tenant?.name || 'Mumo Forge POS',
+                      orderNumber: order.orderNumber,
+                      tableRef: tableRef || undefined,
+                      cashierName: user?.name || 'Cashier',
+                      createdAt: order.createdAt,
+                      items: items.map(i => ({ name: i.name, quantity: i.quantity }))
+                    });
+
                     setTimeout(() => { clearCart(); setCheckoutStatus('idle'); setIsCheckingOut(false); setMpesaRef(''); }, 2000);
                   } catch (err: any) {
                     setErrorMessage(err.response?.data?.error || 'Failed to record M-Pesa payment');

@@ -7,6 +7,7 @@ import {
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { ReservationCalendar } from '../components/ReservationCalendar';
 
 interface RoomCharge {
   id: string;
@@ -37,6 +38,7 @@ const Rooms: React.FC = () => {
     status: string; totalPrice: number; room: { number: string; type: string };
   }
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingViewMode, setBookingViewMode] = useState<'list' | 'calendar'>('list');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingForm, setBookingForm] = useState({ 
     roomId: '', 
@@ -257,9 +259,16 @@ const Rooms: React.FC = () => {
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.25rem', letterSpacing: '-0.01em' }}>
               Upcoming Reservations ({bookings.filter(b => b.status !== 'cancelled').length})
             </h3>
-            <button className="btn-primary" onClick={() => setShowBookingModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
-              <Plus size={16} /> Guarantee Reservation
-            </button>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--bg-deep)', borderRadius: '12px', padding: '0.375rem' }}>
+                <button onClick={() => setBookingViewMode('list')} style={{ padding: '0.4rem 1rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s', background: bookingViewMode === 'list' ? 'var(--bg-elevated)' : 'transparent', color: bookingViewMode === 'list' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>List</button>
+                <button onClick={() => setBookingViewMode('calendar')} style={{ padding: '0.4rem 1rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s', background: bookingViewMode === 'calendar' ? 'var(--bg-elevated)' : 'transparent', color: bookingViewMode === 'calendar' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>Calendar</button>
+              </div>
+              <button className="btn-primary" onClick={() => setShowBookingModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                <Plus size={16} /> Guarantee Reservation
+              </button>
+            </div>
           </div>
 
           {bookings.length === 0 ? (
@@ -271,29 +280,33 @@ const Rooms: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {bookings.map((booking, i) => {
-                const statusColor = { confirmed: '#22c55e', checked_in: 'var(--accent)', checked_out: '#94a3b8', cancelled: '#ef4444' }[booking.status] || '#94a3b8';
-                return (
-                  <div key={booking.id} className="card" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', animationDelay: `${i * 0.05}s` }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--bg-deep)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>🛏️</div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.1rem', marginBottom: '0.125rem' }}>{booking.guestName}</p>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Room {booking.room?.number}</span> ({booking.room?.type}) &nbsp;&bull;&nbsp; 
-                        {new Date(booking.checkIn).toLocaleDateString()} &rarr; {new Date(booking.checkOut).toLocaleDateString()}
-                      </p>
+              {bookingViewMode === 'calendar' ? (
+                <ReservationCalendar bookings={bookings} />
+              ) : (
+                bookings.map((booking, i) => {
+                  const statusColor = { confirmed: '#22c55e', checked_in: 'var(--accent)', checked_out: '#94a3b8', cancelled: '#ef4444' }[booking.status] || '#94a3b8';
+                  return (
+                    <div key={booking.id} className="card" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', animationDelay: `${i * 0.05}s` }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--bg-deep)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>🛏️</div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.1rem', marginBottom: '0.125rem' }}>{booking.guestName}</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Room {booking.room?.number}</span> ({booking.room?.type}) &nbsp;&bull;&nbsp; 
+                          {new Date(booking.checkIn).toLocaleDateString()} &rarr; {new Date(booking.checkOut).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ display: 'inline-block', padding: '0.3rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800, background: `${statusColor}1a`, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em', border: `1px solid ${statusColor}` }}>
+                          {booking.status.replace('_', ' ')}
+                        </span>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.5rem' }}>
+                          KES {booking.totalPrice?.toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ display: 'inline-block', padding: '0.3rem 0.75rem', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 800, background: `${statusColor}1a`, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.05em', border: `1px solid ${statusColor}` }}>
-                        {booking.status.replace('_', ' ')}
-                      </span>
-                      <p style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.5rem' }}>
-                        KES {booking.totalPrice?.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           )}
         </div>

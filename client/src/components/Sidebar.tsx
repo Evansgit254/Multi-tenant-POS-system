@@ -49,14 +49,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [closeNotes, setCloseNotes] = useState('');
   const [isClosing, setIsClosing] = useState(false);
 
-  // Dynamically calculate expected cash from live payments
-  const expectedCashLive = activeShift ? 
-    (activeShift.startingFloat || 0) + (activeShift.payments?.filter((p: any) => p.method === 'cash').reduce((sum: number, p: any) => sum + p.amount, 0) || 0) 
-    : 0;
+  // We purposefully do NOT track or calculate expected cash anymore to ensure
+  // strict blind cash reconciliation process.
 
   useEffect(() => {
     if (showCloseModal && activeShift) {
-      setActualCash(expectedCashLive.toFixed(2));
+      setActualCash(''); // Enforce blind entry
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCloseModal]);
@@ -277,9 +275,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{tenant?.currency || 'KES'} {activeShift.startingFloat.toLocaleString()}</span>
             </div>
             <div style={{ borderTop: '1px dashed var(--border)', margin: '0.25rem 0' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>Expected Cash in Drawer</span>
-              <span style={{ fontWeight: 800, color: '#10b981' }}>{tenant?.currency || 'KES'} {expectedCashLive.toLocaleString()}</span>
+            <div style={{ alignSelf: 'center', margin: '0.5rem 0', padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800 }}>
+              <Banknote size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+              BLIND RECONCILIATION ENABLED
             </div>
           </div>
 

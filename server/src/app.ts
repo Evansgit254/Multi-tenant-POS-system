@@ -26,6 +26,7 @@ import mpesaRouter from './routes/mpesa';
 import sseRouter from './routes/sse';
 import publicMenuRouter from './routes/publicMenu';
 import forecastRouter from './routes/forecast';
+import mpesaWebhookRouter from './routes/mpesaWebhook';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -82,6 +83,9 @@ app.use('/api/tenants/:tenantId/messages',    messagesRouter);
 app.use('/api/tenants/:tenantId/tables',      tablesRouter);
 app.use('/api/tenants/:tenantId/procurement', procurementRouter);
 app.use('/api/tenants/:tenantId/shifts',      shiftsRouter);
+// M-Pesa webhook must be registered BEFORE the authenticated mpesa router
+// so Express resolves it without hitting authentication middleware
+app.use('/api/tenants/:tenantId/mpesa/webhook', mpesaWebhookRouter);
 app.use('/api/tenants/:tenantId/mpesa',       mpesaRouter);
 app.use('/api/tenants/:tenantId/sse',         sseRouter);
 app.use('/api/tenants/:tenantId/forecast',    forecastRouter);

@@ -17,10 +17,6 @@ router.get('/current', async (req: Request, res: Response): Promise<void> => {
         tenantId,
         cashierId,
         status: 'OPEN'
-      },
-      include: {
-        orders: true,
-        payments: true
       }
     });
 

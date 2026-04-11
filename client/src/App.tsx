@@ -22,6 +22,7 @@ import Procurement from './views/Procurement';
 import Reports from './views/Reports';
 import Analytics from './views/Analytics';
 import GuestMenu from './views/GuestMenu';
+import { OfflineBanner } from './components/OfflineBanner';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -112,6 +113,7 @@ const App: React.FC = () => {
                       <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                   </main>
+                  <OfflineBanner />
                 </div>
               </ProtectedRoute>
             } />

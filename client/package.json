@@ -14,6 +14,7 @@
     "axios": "^1.13.6",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
+    "idb": "^8.0.3",
     "lucide-react": "^1.7.0",
     "moment": "^2.30.1",
     "react": "^19.2.4",

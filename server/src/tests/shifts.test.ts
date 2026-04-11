@@ -58,15 +58,30 @@ describe('Cashier Shift & Float Isolation logic', () => {
     expect(res.body.error).toContain('already have an open shift');
   });
 
-  it('3. Safely closes the shift returning a perfectly matched Float discrepancy state', async () => {
+  it('3. GET /current conceals payment arrays to strictly enforce blind closing', async () => {
+    const res = await request(app)
+      .get(`/api/tenants/${tenantId}/shifts/current`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(shiftId);
+    expect(res.body.startingFloat).toBe(1500);
+    
+    // Crucial: Ensure payments array is undefined or completely excluded to prevent UI float leaking
+    expect(res.body.payments).toBeUndefined();
+    expect(res.body.orders).toBeUndefined();
+  });
+
+  it('4. Safely closes the shift returning a variance discrepancy', async () => {
     const res = await request(app)
       .post(`/api/tenants/${tenantId}/shifts/${shiftId}/close`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ actualCash: 1500 }); // Matches perfectly since 0 transactions occurred
+      .send({ actualCash: 1200 }); // Cashier miscounts, expects 1500 + 0
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('CLOSED');
-    expect(res.body.actualCash).toBe(res.body.expectedCash);
+    expect(res.body.expectedCash).toBe(1500); // System securely calculated 1500
+    expect(res.body.actualCash).toBe(1200);   // Cashier declared 1200
   });
 
 });
