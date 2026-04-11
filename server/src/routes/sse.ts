@@ -43,6 +43,15 @@ router.get(
   (req: Request, res: Response) => {
     const { tenantId } = req.params;
 
+    const bus = getTenantBus(tenantId);
+
+    // H-9 FIX: Enforce connection limit to prevent file descriptor exhaustion
+    const MAX_SSE_CONNECTIONS = 100;
+    if (bus.listenerCount('order:new') >= MAX_SSE_CONNECTIONS) {
+      res.status(429).json({ error: 'Too many active SSE connections for this tenant. Please try again later.' });
+      return;
+    }
+
     // SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -54,8 +63,6 @@ router.get(
     const heartbeat = setInterval(() => {
       res.write(': heartbeat\n\n');
     }, 25000);
-
-    const bus = getTenantBus(tenantId);
 
     const send = (event: string) => (data: string) => {
       res.write(`event: ${event}\ndata: ${data}\n\n`);

@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Tenant {
@@ -88,6 +88,8 @@ model Session {
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId])   // L-10: Fast session lookup by user (for revokation queries)
 }
 
 model Category {
@@ -181,6 +183,10 @@ model Order {
   shift               Shift?               @relation(fields: [shiftId], references: [id])
 
   @@unique([tenantId, orderNumber])
+  @@index([tenantId, status])        // L-10: Fast filter by status across a tenant
+  @@index([tenantId, createdAt])     // L-10: Date-range queries for reports & analytics
+  @@index([cashierId])               // L-10: Shift reconciliation lookups
+  @@index([guestId])                 // L-10: Guest history lookups
 }
 
 model Table {
@@ -291,6 +297,9 @@ model Payment {
   room    Room?   @relation(fields: [roomId], references: [id])
   shiftId String?
   shift   Shift?  @relation(fields: [shiftId], references: [id])
+
+  @@index([tenantId, paidAt])        // L-10: Revenue by date queries
+  @@index([orderId])                 // L-10: Payment lookup by order
 }
 
 model Shift {
@@ -375,6 +384,9 @@ model StockTransaction {
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
   user          User?         @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, inventoryItemId]) // L-10: Stock history per item
+  @@index([tenantId, createdAt])       // L-10: Date-range stock audit queries
 }
 
 model Guest {

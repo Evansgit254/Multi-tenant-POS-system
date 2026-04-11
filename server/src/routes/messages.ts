@@ -9,7 +9,7 @@ router.use(authenticate, scopeTenant);
 // F-9 FIX: Uses real per-user, per-channel lastReadAt instead of a 24h timestamp proxy
 router.get('/unread-count', async (req: Request, res: Response): Promise<void> => {
   const { tenantId } = req.params;
-  const userId = (req as any).user.id;
+  const userId = req.user.id;
   try {
     // Find the user's last-read timestamp for the general channel (most common unread check)
     const readRecord = await prisma.userChannelRead.findUnique({
@@ -33,7 +33,7 @@ router.get('/unread-count', async (req: Request, res: Response): Promise<void> =
 // F-16 FIX: Added offset-based pagination (?page=1&limit=50)
 router.get('/:channel', async (req: Request, res: Response): Promise<void> => {
   const { tenantId, channel } = req.params;
-  const userId = (req as any).user.id;
+  const userId = req.user.id;
   const limit = Math.min(Number(req.query.limit) || 50, 200);
   const cursor = req.query.cursor as string | undefined; // cursor-based for chat: last seen message ID
 
@@ -63,10 +63,15 @@ router.get('/:channel', async (req: Request, res: Response): Promise<void> => {
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   const { tenantId } = req.params;
   const { channel, content } = req.body;
-  const userId = (req as any).user.id;
+  const userId = req.user.id;
 
   if (!channel || !content) {
     res.status(400).json({ error: 'Channel and content are required' });
+    return;
+  }
+  // M-13 FIX: Limit message content to 2000 characters to prevent DB/memory overload
+  if (typeof content !== 'string' || content.length > 2000) {
+    res.status(400).json({ error: 'Message content must be between 1 and 2000 characters' });
     return;
   }
 

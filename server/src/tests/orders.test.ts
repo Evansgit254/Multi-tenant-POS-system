@@ -55,7 +55,9 @@ beforeAll(async () => {
   });
   shiftId = shift.id;
 
-  token = jwt.sign({ id: user.id, tenantId, role: user.role }, process.env.JWT_SECRET || 'test-secret');
+  const jti = 'test-jti-' + Date.now();
+  await prisma.session.create({ data: { token: jti, userId: user.id, tenantId, expiresAt: new Date(Date.now() + 86400000) } });
+  token = jwt.sign({ id: user.id, tenantId, role: user.role, jti }, process.env.JWT_SECRET || 'test-secret');
 
   const category = await prisma.category.create({
     data: { tenantId, name: 'Test Category' }

@@ -10,7 +10,7 @@ router.use(authenticate, scopeTenant);
 router.get('/current', async (req: Request, res: Response): Promise<void> => {
   try {
     const { tenantId } = req.params;
-    const cashierId = (req as any).user.id;
+    const cashierId = req.user.id;
 
     const shift = await prisma.shift.findFirst({
       where: {
@@ -41,7 +41,7 @@ router.post(
 
     try {
       const { tenantId } = req.params;
-      const cashierId = (req as any).user.id;
+      const cashierId = req.user.id;
       const { startingFloat, notes } = req.body;
 
       // Check for existing open shift
@@ -82,7 +82,7 @@ router.post(
 
     try {
       const { tenantId, id } = req.params;
-      const cashierId = (req as any).user.id;
+      const cashierId = req.user.id;
       const { actualCash, notes } = req.body;
 
       const shift = await prisma.shift.findUnique({
@@ -92,7 +92,8 @@ router.post(
 
       if (!shift) { res.status(404).json({ error: 'Shift not found' }); return; }
       if (shift.status === 'CLOSED') { res.status(400).json({ error: 'Shift is already closed' }); return; }
-      if (shift.cashierId !== cashierId && (req as any).user.role !== 'hotel_admin') {
+      // M-10 FIX: Allow managers and hotel_admin to close any shift (e.g., when cashier forgets)
+      if (shift.cashierId !== cashierId && !['hotel_admin', 'manager'].includes(req.user.role)) {
         res.status(403).json({ error: 'You are not authorized to close this shift' }); return;
       }
 

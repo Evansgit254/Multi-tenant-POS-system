@@ -96,12 +96,18 @@ router.patch('/:id', requireRole('admin', 'manager', 'cashier', 'hotel_admin'), 
 });
 
 // DELETE /api/tenants/:tenantId/guests/:id
+// L-8 FIX: Block guest deletion if they have associated orders (preserve history)
 router.delete('/:id', requireRole('admin', 'manager', 'hotel_admin'), async (req, res, next) => {
   try {
     const { tenantId, id } = req.params as Record<string, string>;
-    await prisma.guest.delete({
-      where: { id, tenantId }
-    });
+    const orderCount = await prisma.order.count({ where: { guestId: id } });
+    if (orderCount > 0) {
+      res.status(400).json({
+        error: `Cannot delete guest — they have ${orderCount} order(s) on record. Historical data would be lost.`
+      });
+      return;
+    }
+    await prisma.guest.delete({ where: { id, tenantId } });
     res.status(204).end();
   } catch (error) {
     next(error);
@@ -120,6 +126,16 @@ router.post('/:id/loyalty/adjust', requireRole('admin', 'manager', 'hotel_admin'
     const { points, notes } = schema.parse(req.body);
 
     const transaction = await prisma.$transaction(async (tx) => {
+      // M-12 FIX: Prevent loyalty balance from going below zero
+      const currentGuest = await tx.guest.findUnique({ where: { id, tenantId } });
+      if (!currentGuest) throw new Error('Guest not found');
+      if (currentGuest.loyaltyPoints + points < 0) {
+        throw Object.assign(
+          new Error(`Insufficient loyalty points. Current balance: ${currentGuest.loyaltyPoints}`),
+          { safe: true }
+        );
+      }
+
       const guest = await tx.guest.update({
         where: { id, tenantId },
         data: { loyaltyPoints: { increment: points } }
@@ -138,7 +154,8 @@ router.post('/:id/loyalty/adjust', requireRole('admin', 'manager', 'hotel_admin'
     });
 
     res.json(transaction);
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.safe) { res.status(400).json({ error: error.message }); return; }
     next(error);
   }
 });

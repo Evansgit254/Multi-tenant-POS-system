@@ -54,7 +54,7 @@ router.post('/', requirePermission(PERMISSIONS.MANAGE_STOCK), async (req, res, n
           inventoryItemId: item.id,
           type: 'IN',
           quantity: item.currentStock,
-          userId: (req as any).user?.id,
+          userId: req.user?.id,
           notes: 'Initial stock setup'
         }
       });
@@ -99,7 +99,7 @@ router.patch('/:id', requirePermission(PERMISSIONS.MANAGE_STOCK), async (req, re
           type: 'ADJUSTMENT',
           quantity: data.currentStock - original.currentStock,
           notes: `Manual stock correction (was ${original.currentStock}, now ${data.currentStock})`,
-          userId: (req as any).user?.id
+          userId: req.user?.id
         }
       });
     }
@@ -145,7 +145,7 @@ router.post('/:id/adjust', requirePermission(PERMISSIONS.MANAGE_STOCK), async (r
           type,
           quantity,
           notes,
-          userId: (req as any).user?.id
+          userId: req.user?.id
         }
       });
       
@@ -185,9 +185,17 @@ router.get('/:id/transactions', async (req, res, next) => {
 router.delete('/:id', requirePermission(PERMISSIONS.MANAGE_STOCK), async (req, res, next) => {
   try {
     const { tenantId, id } = req.params as Record<string, string>;
-    await prisma.inventoryItem.delete({
-      where: { id, tenantId }
-    });
+
+    // H-6 FIX: Block deletion if this item is used as an ingredient in any menu item
+    const recipeCount = await prisma.menuItemIngredient.count({ where: { inventoryItemId: id } });
+    if (recipeCount > 0) {
+      res.status(400).json({
+        error: `Cannot delete this inventory item — it is used as an ingredient in ${recipeCount} menu item(s). Remove it from all recipes first.`
+      });
+      return;
+    }
+
+    await prisma.inventoryItem.delete({ where: { id, tenantId } });
     res.status(204).end();
   } catch (error) {
     next(error);

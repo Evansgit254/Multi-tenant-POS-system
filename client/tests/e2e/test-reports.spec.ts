@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
 
 test('capture reports screenshots', async ({ page }) => {
   await page.goto('/login');

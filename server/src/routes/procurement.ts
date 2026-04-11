@@ -115,6 +115,14 @@ router.post('/purchase-orders', async (req: any, res) => {
     const { tenantId } = req.params;
     const { supplierId, items, notes } = req.body;
 
+    // M-8 FIX: Validate that all inventory items belong to this tenant
+    for (const item of items) {
+      const invItem = await prisma.inventoryItem.findUnique({ where: { id: item.inventoryItemId } });
+      if (!invItem || invItem.tenantId !== tenantId) {
+        return res.status(400).json({ error: `Inventory item ${item.inventoryItemId} does not belong to this tenant.` });
+      }
+    }
+
     const totalAmount = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
 
     const po = await prisma.purchaseOrder.create({
@@ -233,6 +241,21 @@ router.patch('/purchase-orders/:id/status', async (req: any, res) => {
     });
 
     if (!existingPo) return res.status(404).json({ error: 'PO not found' });
+
+    // M-9 FIX: Enforce PO status state machine to prevent stock manipulation via status cycling
+    const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+      draft:     ['sent', 'cancelled'],
+      sent:      ['received', 'cancelled'],
+      received:  [], // Terminal state — no transitions allowed after stock is received
+      cancelled: []  // Terminal state
+    };
+    const currentStatus = existingPo.status;
+    const allowed = ALLOWED_TRANSITIONS[currentStatus] ?? [];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        error: `Cannot transition PO from '${currentStatus}' to '${status}'. Allowed: [${allowed.join(', ') || 'none — this is a terminal state'}]`
+      });
+    }
 
     const po = await prisma.purchaseOrder.update({
       where: { id, tenantId },

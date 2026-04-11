@@ -62,8 +62,11 @@ const SuperAdmin: React.FC = () => {
       setShowCreateModal(false);
       setNewTenant({ name: '', slug: '', currency: 'KES', taxRate: 16 });
       fetchTenants();
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to create tenant', 'error');
+    } catch (err) {
+      const errorMsg = err && typeof err === 'object' && 'response' in err
+        ? (err as Record<string, any>).response?.data?.error || 'Failed to create tenant'
+        : 'Failed to create tenant';
+      showToast(errorMsg, 'error');
     } finally { setIsSaving(false); }
   };
 

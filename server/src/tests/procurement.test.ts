@@ -25,7 +25,9 @@ beforeAll(async () => {
   tenantId = tenant.id;
 
   const user = await prisma.user.create({ data: { tenantId, name: 'Supply Admin', email: 'admin@procure.com', role: 'hotel_admin' } });
-  token = jwt.sign({ id: user.id, tenantId, role: user.role }, process.env.JWT_SECRET || 'test-secret');
+  const jti = 'test-jti-' + Date.now();
+  await prisma.session.create({ data: { token: jti, userId: user.id, tenantId, expiresAt: new Date(Date.now() + 86400000) } });
+  token = jwt.sign({ id: user.id, tenantId, role: user.role, jti }, process.env.JWT_SECRET || 'test-secret');
 
   const sup = await prisma.supplier.create({ data: { tenantId, name: 'Global Goods' } });
   supplierId = sup.id;
@@ -59,6 +61,12 @@ describe('Procurement Automation Engine Pipeline', () => {
   });
 
   it('2. Marks the Supply Order as RECEIVED and automatically inflates Inventory stock levels', async () => {
+    // M-9 FIX: Respect State Machine (Draft -> Sent -> Received)
+    await request(app)
+      .patch(`/api/tenants/${tenantId}/procurement/purchase-orders/${purchaseOrderId}/status`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'sent' });
+
     const res = await request(app)
       .patch(`/api/tenants/${tenantId}/procurement/purchase-orders/${purchaseOrderId}/status`)
       .set('Authorization', `Bearer ${token}`)

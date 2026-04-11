@@ -80,8 +80,14 @@ jobs:
         working-directory: ./server
         env:
           DATABASE_URL: "file:./dev.db"
-          JWT_SECRET: "ci-test-secret"
+          JWT_SECRET: "ci-test-secret-minimum-32-chars-ok"
           PORT: 3000
+          # M-16 FIX: Test in production mode so startup guards (CORS_ORIGIN check, etc.) are exercised
+          NODE_ENV: production
+          CORS_ORIGIN: "http://localhost:5173"
+          REGISTRATION_ENABLED: "true"
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
+          MPESA_WEBHOOK_SECRET: "ci-test-webhook-secret"
         run: npm run dev &
         
       - name: Wait for Backend

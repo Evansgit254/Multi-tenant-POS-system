@@ -4,7 +4,7 @@
  * Configuration (add to .env):
  *   AT_API_KEY   = your_africa_talking_api_key
  *   AT_USERNAME  = your_africa_talking_username (use 'sandbox' for testing)
- *   AT_SENDER_ID = optional short code or alphanumeric sender (e.g. 'SERVEPOINT')
+ *   AT_SENDER_ID = optional short code or alphanumeric sender (e.g. 'MSC')
  *
  * If AT_API_KEY is not set, messages are logged to the console (dev mode).
  */

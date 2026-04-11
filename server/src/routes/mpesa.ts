@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, scopeTenant } from '../middleware/auth';
+import { decrypt } from '../lib/encryption';
 
 const router = Router({ mergeParams: true });
 router.use(authenticate, scopeTenant);
@@ -89,6 +90,11 @@ router.post(
         return;
       }
 
+      // H-10 FIX: Decrypt secrets before use
+      const consumerKey    = decrypt(tenant.mpesaConsumerKey)    ?? '';
+      const consumerSecret = decrypt(tenant.mpesaConsumerSecret) ?? '';
+      const passkey        = decrypt(tenant.mpesaPasskey)        ?? '';
+
       // Verify order belongs to this tenant
       const order = await prisma.order.findUnique({
         where: { id: orderId, tenantId }
@@ -99,11 +105,13 @@ router.post(
         ? 'https://api.safaricom.co.ke'
         : 'https://sandbox.safaricom.co.ke';
 
-      const token     = await getMpesaToken(tenant.mpesaConsumerKey, tenant.mpesaConsumerSecret);
+      const token     = await getMpesaToken(consumerKey, consumerSecret);
       const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-      const password  = Buffer.from(`${tenant.mpesaShortcode}${tenant.mpesaPasskey}${timestamp}`).toString('base64');
+      const password  = Buffer.from(`${tenant.mpesaShortcode}${passkey}${timestamp}`).toString('base64');
       const serverUrl = process.env.SERVER_URL ?? 'http://localhost:3000';
-      const callbackUrl = `${serverUrl}/api/tenants/${tenantId}/mpesa/webhook`;
+      // H-7 FIX: Include a secret token in the callback URL to validate webhook authenticity
+      const webhookSecret = process.env.MPESA_WEBHOOK_SECRET ?? '';
+      const callbackUrl = `${serverUrl}/api/tenants/${tenantId}/mpesa/webhook${webhookSecret ? `?secret=${webhookSecret}` : ''}`;
 
       const payload = {
         BusinessShortCode: tenant.mpesaShortcode,
@@ -150,6 +158,17 @@ router.post(
 router.post('/webhook', async (req: Request, res: Response): Promise<void> => {
   try {
     const { tenantId } = req.params;
+
+    // H-7 FIX: Validate webhook secret to prevent fake payment injections
+    const expectedSecret = process.env.MPESA_WEBHOOK_SECRET;
+    if (expectedSecret) {
+      const receivedSecret = req.query.secret as string;
+      if (receivedSecret !== expectedSecret) {
+        console.warn(`[M-Pesa] Webhook received with invalid secret from ${req.ip}`);
+        res.json({ ResultCode: 0 }); return; // ACK but ignore
+      }
+    }
+
     const stkCallback = req.body?.Body?.stkCallback;
     if (!stkCallback) { res.json({ ResultCode: 0 }); return; }
 
@@ -169,14 +188,25 @@ router.post('/webhook', async (req: Request, res: Response): Promise<void> => {
     });
 
     if (order && order.status !== 'COMPLETED') {
-      await prisma.payment.create({
-        data: { tenantId, orderId: order.id, method: 'mpesa', amount: Number(amountPaid), reference: mpesaCode }
-      });
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { status: 'COMPLETED' }
-      });
-      console.log(`✅ M-Pesa confirmed: ${mpesaCode} for order ${accountRef}`);
+      const paid = Number(amountPaid);
+
+      // H-8 FIX: Validate that amount paid covers the order total
+      if (paid < order.total - 1) { // 1 KES tolerance for rounding
+        console.warn(`[M-Pesa] Underpayment on order ${accountRef}: expected ${order.total}, got ${paid}. Recording partial payment.`);
+        await prisma.payment.create({
+          data: { tenantId, orderId: order.id, method: 'mpesa', amount: paid, reference: mpesaCode }
+        });
+        // Do NOT mark COMPLETED — let cashier reconcile
+      } else {
+        await prisma.payment.create({
+          data: { tenantId, orderId: order.id, method: 'mpesa', amount: paid, reference: mpesaCode }
+        });
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'COMPLETED' }
+        });
+        console.log(`✅ M-Pesa confirmed: ${mpesaCode} for order ${accountRef}`);
+      }
     }
 
     res.json({ ResultCode: 0, ResultDesc: 'Received successfully.' });

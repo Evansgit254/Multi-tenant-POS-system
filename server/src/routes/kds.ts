@@ -14,7 +14,7 @@ router.get('/tickets', async (req, res, next) => {
     
     const tickets = await prisma.orderItem.findMany({
       where: {
-        order: { tenantId, status: { notIn: ['completed', 'cancelled'] } },
+        order: { tenantId, status: { notIn: ['COMPLETED', 'CANCELLED'] } },
         kitchenStatus: { in: ['PENDING', 'PREPARING', 'READY'] }
       },
       include: {

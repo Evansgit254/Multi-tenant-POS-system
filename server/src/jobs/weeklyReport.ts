@@ -1,27 +1,29 @@
 import cron from 'node-cron';
 import prisma from '../lib/prisma';
 import { sendEmail } from '../services/emailService';
+import { runMaintenanceJobs } from './maintenanceJobs';
 
 /**
  * Core business logic that handles a single restaurant/hotel tenant instance.
  * It strictly aggregates ONLY 'completed' orders over a sliding 7-day window.
  */
-const processTenantWeeklyReport = async (tenant: any) => {
+const processTenantWeeklyReport = async (tenant: { id: string; name: string; currency: string }) => {
   try {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Fetch total active revenue for the past 7 days
-    const orders = await prisma.order.findMany({
+    const aggregations = await prisma.order.aggregate({
       where: {
         tenantId: tenant.id,
         status: 'COMPLETED',
         createdAt: { gte: oneWeekAgo },
       },
+      _count: { id: true },
+      _sum: { total: true },
     });
 
-    const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+    const totalOrders = aggregations._count.id;
+    const totalRevenue = aggregations._sum.total || 0;
     
     // Fetch all active users explicitly bound to this specific tenant
     const users = await prisma.user.findMany({
@@ -67,7 +69,7 @@ const processTenantWeeklyReport = async (tenant: any) => {
         </div>
 
         <p style="font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 30px;">
-          You are receiving this automated email because you opted into "Weekly Reports" in your Notification Preferences. To disable this, log into the ServePoint Settings dashboard.
+          You are receiving this automated email because you opted into "Weekly Reports" in your Notification Preferences. To disable this, log into the ServePoint Settings dashboard.<br/><span style="font-size:11px;color:#94a3b8;">ServePoint is a product of Mumo Syntax &amp; Capital.</span>
         </p>
       </div>
     `;
@@ -183,5 +185,11 @@ export const initializeCronJobs = () => {
     runLowStockAlert();
   });
 
-  console.log('[CRON] Engine Armed: Weekly Report @ Sun 20:00 | Session Pruning @ daily 03:00 | Low-Stock Alert @ daily 06:00');
+  // L-6 + L-9 FIX: Nightly maintenance @ 02:00 AM
+  // Auto-closes stale open shifts (>24h) and purges messages older than 90 days
+  cron.schedule('0 2 * * *', () => {
+    runMaintenanceJobs();
+  });
+
+  console.log('[CRON] Engine Armed: Weekly Report @ Sun 20:00 | Session Pruning @ 03:00 | Low-Stock Alert @ 06:00 | Maintenance @ 02:00');
 };

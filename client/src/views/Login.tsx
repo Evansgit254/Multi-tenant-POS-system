@@ -193,7 +193,7 @@ const Login: React.FC = () => {
 
           <div style={{ marginTop: 'auto', textAlign: 'center' }}>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
-              @ 2026 SMARTPOS SETUP
+              © 2026 Mumo Syntax & Capital
             </p>
           </div>
 

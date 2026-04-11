@@ -24,7 +24,9 @@ beforeAll(async () => {
   tenantId = tenant.id;
 
   const user = await prisma.user.create({ data: { tenantId, name: 'Receptionist', email: 'desk@rooms.com', role: 'hotel_admin' } });
-  token = jwt.sign({ id: user.id, tenantId, role: user.role }, process.env.JWT_SECRET || 'test-secret');
+  const jti = 'test-jti-' + Date.now();
+  await prisma.session.create({ data: { token: jti, userId: user.id, tenantId, expiresAt: new Date(Date.now() + 86400000) } });
+  token = jwt.sign({ id: user.id, tenantId, role: user.role, jti }, process.env.JWT_SECRET || 'test-secret');
 
   const room = await prisma.room.create({ data: { tenantId, number: '101', type: 'single', status: 'available', tariff: 5000 } });
   roomId = room.id;

@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'ServePoint POS',
         short_name: 'ServePoint',
-        description: 'Premier Hotel Point of Sale System',
+        description: 'ServePoint POS – Premier Hotel Point of Sale System by Mumo Syntax & Capital',
         theme_color: '#b8860b',
         background_color: '#0f0f13',
         display: 'standalone',

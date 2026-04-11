@@ -22,7 +22,8 @@ router.get('/', async (req: any, res) => {
 });
 
 // Update table coordinates (for floor plan builder)
-router.patch('/:id/coordinates', async (req: any, res) => {
+// H-1 FIX: Added role guard — all users could previously reposition tables
+router.patch('/:id/coordinates', authorize('hotel_admin', 'manager'), async (req: any, res) => {
   try {
     const { tenantId, id } = req.params;
     const { x, y } = req.body;

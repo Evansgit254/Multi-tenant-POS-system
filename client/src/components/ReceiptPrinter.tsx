@@ -123,6 +123,7 @@ export const GuestReceiptTemplate: React.FC<{ data: ReceiptData }> = ({ data }) 
       <div style={{ textAlign: 'center', fontSize: '10px', marginTop: '8px' }}>
         <div>{data.receiptFooter || 'Thank you for your visit!'}</div>
         <div style={{ marginTop: '4px', opacity: 0.6 }}>Powered by ServePoint POS</div>
+        <div style={{ marginTop: '2px', opacity: 0.4, fontSize: '9px' }}>A Mumo Syntax & Capital Product</div>
         {data.shiftId && <div style={{ opacity: 0.5 }}>Shift: {data.shiftId.slice(-8).toUpperCase()}</div>}
       </div>
     </div>

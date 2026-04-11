@@ -26,7 +26,9 @@ beforeAll(async () => {
 
   const user = await prisma.user.create({ data: { tenantId, name: 'Admin', email: 'req@rep.com', role: 'hotel_admin' } });
   cashierId = user.id;
-  token = jwt.sign({ id: user.id, tenantId, role: user.role }, process.env.JWT_SECRET || 'test-secret');
+  const jti = 'test-jti-' + Date.now();
+  await prisma.session.create({ data: { token: jti, userId: user.id, tenantId, expiresAt: new Date(Date.now() + 86400000) } });
+  token = jwt.sign({ id: user.id, tenantId, role: user.role, jti }, process.env.JWT_SECRET || 'test-secret');
 
   const shift = await prisma.shift.create({ data: { tenantId, cashierId, status: 'OPEN', startingFloat: 0 } });
   shiftId = shift.id;
@@ -47,7 +49,7 @@ beforeAll(async () => {
   // Create Order 2: Fully Paid but Voided/Cancelled (1160 KES, Paid via Cash)
   const order2 = await prisma.order.create({
     data: {
-      tenantId, cashierId, shiftId, orderNumber: 'REP-2', orderType: 'dine_in', status: 'cancelled',
+      tenantId, cashierId, shiftId, orderNumber: 'REP-2', orderType: 'dine_in', status: 'CANCELLED',
       subtotal: 1000, taxAmount: 160, total: 1160, discount: 0,
     }
   });

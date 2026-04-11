@@ -93,13 +93,14 @@ router.get('/dashboard', async (req, res, next) => {
       }
     });
 
-    // Also fetch cancelled orders separately (for discounts context, not revenue)
-    // DATA FIX: Use lowercase 'cancelled' which is how orders.ts writes it
-    const cancelledOrders = await prisma.order.findMany({
-      where: { tenantId, status: 'cancelled', createdAt: dateFilter }
+    // Also fetch cancelled order stats (for context — not included in revenue)
+    const cancelledAgg = await prisma.order.aggregate({
+      where: { tenantId, status: 'CANCELLED', createdAt: dateFilter },
+      _count: { id: true },
+      _sum: { total: true },
     });
-    const cancelledCount = cancelledOrders.length;
-    const cancelledValue = cancelledOrders.reduce((sum, o) => sum + Number(o.total || o.subtotal), 0);
+    const cancelledCount = cancelledAgg._count.id;
+    const cancelledValue = Number(cancelledAgg._sum.total || 0);
 
     // Live Occupancy Metrics
     const totalTables = await prisma.table.count({ where: { tenantId } });

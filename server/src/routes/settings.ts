@@ -1,6 +1,7 @@
 import { Router, Response, Request } from 'express';
 import prisma from '../lib/prisma';
 import { authenticate, authorize, scopeTenant } from '../middleware/auth';
+import { encrypt, decrypt } from '../lib/encryption';
 
 const router = Router({ mergeParams: true });
 router.use(authenticate, scopeTenant, authorize('hotel_admin'));
@@ -18,11 +19,14 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         // Only expose shortcode/till for display — never raw API secrets
         mpesaTillDisplay: true,
         mpesaShortcode: true,
-        // mpesaConsumerKey returned only as boolean: expose if it exists
-        mpesaConsumerKey: true,   // presence-check only, never log or forward
+        // C-2 FIX: Never expose raw API key — return presence flag only
+        mpesaConsumerKey: true,  // used below for boolean check, stripped from response
       }
     });
-    res.json(tenant);
+    if (!tenant) { res.status(404).json({ error: 'Tenant not found' }); return; }
+    // C-2 FIX: Strip raw key, expose only a boolean flag
+    const { mpesaConsumerKey, ...safeSettings } = tenant as any;
+    res.json({ ...safeSettings, mpesaIsConfigured: !!mpesaConsumerKey });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
@@ -54,16 +58,18 @@ router.patch('/', async (req: Request, res: Response): Promise<void> => {
 
 // PATCH /api/tenants/:tenantId/settings/mpesa
 // Whitelisted separately to only allow M-Pesa credential updates
+// H-10 FIX: All sensitive secrets are encrypted with AES-256-GCM before storage
 router.patch('/mpesa', async (req: Request, res: Response): Promise<void> => {
   try {
     const { mpesaConsumerKey, mpesaConsumerSecret, mpesaShortcode, mpesaPasskey, mpesaTillDisplay } = req.body;
 
     const data: Record<string, any> = {};
-    if (mpesaConsumerKey !== undefined)    data.mpesaConsumerKey    = mpesaConsumerKey    ? String(mpesaConsumerKey)    : null;
-    if (mpesaConsumerSecret !== undefined) data.mpesaConsumerSecret = mpesaConsumerSecret ? String(mpesaConsumerSecret) : null;
-    if (mpesaShortcode !== undefined)      data.mpesaShortcode      = mpesaShortcode      ? String(mpesaShortcode)      : null;
-    if (mpesaPasskey !== undefined)        data.mpesaPasskey        = mpesaPasskey        ? String(mpesaPasskey)        : null;
-    if (mpesaTillDisplay !== undefined)    data.mpesaTillDisplay    = mpesaTillDisplay    ? String(mpesaTillDisplay)    : null;
+    // H-10 FIX: Encrypt sensitive secrets before writing to DB
+    if (mpesaConsumerKey !== undefined)    data.mpesaConsumerKey    = mpesaConsumerKey    ? encrypt(String(mpesaConsumerKey))    : null;
+    if (mpesaConsumerSecret !== undefined) data.mpesaConsumerSecret = mpesaConsumerSecret ? encrypt(String(mpesaConsumerSecret)) : null;
+    if (mpesaShortcode !== undefined)      data.mpesaShortcode      = mpesaShortcode      ? String(mpesaShortcode)               : null; // Shortcode is not secret
+    if (mpesaPasskey !== undefined)        data.mpesaPasskey        = mpesaPasskey        ? encrypt(String(mpesaPasskey))        : null;
+    if (mpesaTillDisplay !== undefined)    data.mpesaTillDisplay    = mpesaTillDisplay    ? String(mpesaTillDisplay)            : null;
 
     await prisma.tenant.update({
       where: { id: req.params.tenantId },

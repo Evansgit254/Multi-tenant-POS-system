@@ -150,9 +150,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           }}>
             <Sparkles size={22} color="white" />
           </div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'white' }}>
-            ServePoint
-          </h1>
+          <div>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'white', margin: 0 }}>
+              ServePoint
+            </h1>
+            <p style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.45)', fontWeight: 600, letterSpacing: '0.05em', marginTop: '1px' }}>
+              by Mumo Syntax & Capital
+            </p>
+          </div>
         </div>
 
         {/* Mobile Close Button */}

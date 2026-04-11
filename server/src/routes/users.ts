@@ -22,7 +22,7 @@ router.get('/', authorize('hotel_admin', 'manager'), async (req: Request, res: R
 // GET /api/tenants/:tenantId/users/me/stats
 router.get('/me/stats', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
     const tenantId = req.params.tenantId;
 
     // F-12 (users): Only count properly completed orders
@@ -48,8 +48,8 @@ router.get('/me/stats', async (req: Request, res: Response): Promise<void> => {
 // GET /api/tenants/:tenantId/users/me/sessions
 router.get('/me/sessions', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
-    const currentJti = (req as any).user.jti;
+    const userId = req.user.id;
+    const currentJti = req.user.jti;
 
     const sessions = await prisma.session.findMany({
       where: { userId, isActive: true },
@@ -74,7 +74,7 @@ router.get('/me/sessions', async (req: Request, res: Response): Promise<void> =>
 // DELETE /api/tenants/:tenantId/users/me/sessions/:sessionId
 router.delete('/me/sessions/:sessionId', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
     const { sessionId } = req.params;
 
     const session = await prisma.session.findUnique({ where: { id: sessionId } });
@@ -97,7 +97,7 @@ router.delete('/me/sessions/:sessionId', async (req: Request, res: Response): Pr
 // GET /api/tenants/:tenantId/users/me/preferences
 router.get('/me/preferences', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { preferences: true }
@@ -113,7 +113,7 @@ router.get('/me/preferences', async (req: Request, res: Response): Promise<void>
 // PATCH /api/tenants/:tenantId/users/me/preferences
 router.patch('/me/preferences', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
 
     const existing = await prisma.user.findUnique({
       where: { id: userId },
@@ -138,7 +138,7 @@ router.patch('/me/preferences', async (req: Request, res: Response): Promise<voi
 // F-6 FIX: Added email uniqueness check and graceful error handling
 router.put('/profile', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user.id;
     const { name, email } = req.body;
 
     // F-6: Check if email is already used by another user
@@ -201,6 +201,19 @@ router.patch('/:id', authorize('hotel_admin', 'manager'), async (req: Request, r
     const { id } = req.params;
     const { name, email, role, isActive } = req.body;
 
+    // M-5 FIX: Prevent role escalation — cannot assign role >= your own
+    if (role !== undefined) {
+      const roleHierarchy: Record<string, number> = {
+        super_admin: 100, hotel_admin: 80, manager: 60, cashier: 20
+      };
+      const callerLevel = roleHierarchy[req.user.role] ?? 0;
+      const targetLevel = roleHierarchy[role] ?? 0;
+      if (targetLevel >= callerLevel && req.user.role !== 'super_admin') {
+        res.status(403).json({ error: 'You cannot assign a role equal to or higher than your own.' });
+        return;
+      }
+    }
+
     if (email) {
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing && existing.id !== id) {
@@ -249,19 +262,32 @@ router.patch('/:id/password', authorize('hotel_admin', 'manager'), async (req: R
 });
 
 // DELETE /api/tenants/:tenantId/users/:id
+// L-3 FIX: Soft-delete — deactivate instead of hard delete to preserve order history
 router.delete('/:id', authorize('hotel_admin', 'manager'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
-    if (id === (req as any).user.id) {
+    if (id === req.user.id) {
       res.status(403).json({ error: 'Cannot delete your own account' });
       return;
     }
 
-    await prisma.user.delete({
-      where: { id, tenantId: req.params.tenantId }
-    });
-    
+    // L-3 FIX: Block hard delete if user has placed any orders (would break historical records)
+    const orderCount = await prisma.order.count({ where: { cashierId: id } });
+    if (orderCount > 0) {
+      // Soft-delete: deactivate instead
+      await prisma.user.update({
+        where: { id, tenantId: req.params.tenantId },
+        data: { isActive: false }
+      });
+      // Also revoke all sessions
+      await prisma.session.updateMany({ where: { userId: id }, data: { isActive: false } });
+      res.json({ message: 'User deactivated (has order history — cannot be permanently deleted).' });
+      return;
+    }
+
+    // Hard delete only if the user has zero order history
+    await prisma.user.delete({ where: { id, tenantId: req.params.tenantId } });
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete user' });

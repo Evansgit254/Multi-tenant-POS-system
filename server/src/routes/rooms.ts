@@ -117,6 +117,11 @@ router.patch(
 
     try {
       const { guestName, checkedInAt } = req.body;
+      // M-7 FIX: Require guestName when marking room as occupied
+      if (req.body.status === 'occupied' && !guestName?.trim()) {
+        res.status(400).json({ error: 'A guest name is required when marking a room as occupied.' });
+        return;
+      }
       const room = await prisma.room.update({
         where: { id: req.params.id, tenantId: req.params.tenantId },
         data: { 
@@ -133,19 +138,22 @@ router.patch(
 );
 
 // GET /api/tenants/:tenantId/rooms/:id/tab
+// L-5 FIX: Use RoomCharge as source of truth — shows all unsettled charges regardless of order status
 router.get('/:id/tab', async (req: Request, res: Response): Promise<void> => {
   try {
-    const orders = await prisma.order.findMany({
-      where: { 
-        roomId: req.params.id, 
-        tenantId: req.params.tenantId,
-        status: { in: ['pending', 'preparing', 'ready'] }
-      },
+    const unsettledCharges = await prisma.roomCharge.findMany({
+      where: { roomId: req.params.id, tenantId: req.params.tenantId, isSettled: false },
       include: {
-        items: { include: { menuItem: true } },
-        payments: true
+        order: {
+          include: {
+            items: { include: { menuItem: true } },
+            payments: true
+          }
+        }
       }
     });
+    // Return the unique orders that have unsettled charges
+    const orders = unsettledCharges.map(c => c.order).filter(Boolean);
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch room tab' });
@@ -175,20 +183,29 @@ router.post(
         // 2. Settle F&B room charges
         let totalSettled = 0;
         for (const charge of charges) {
-          await tx.payment.create({
-            data: {
-              tenantId,
-              orderId: charge.orderId,
-              method,
-              amount: charge.amount,
-              roomId: id,
-            }
+          // H-5 FIX: Check if a payment for this order already exists to avoid duplicates
+          const existingPayments = await tx.payment.aggregate({
+            where: { orderId: charge.orderId },
+            _sum: { amount: true }
           });
+          const alreadyPaid = Number(existingPayments._sum.amount ?? 0);
+          const outstanding = charge.amount - alreadyPaid;
+          if (outstanding > 0.01) {
+            await tx.payment.create({
+              data: {
+                tenantId,
+                orderId: charge.orderId,
+                method,
+                amount: outstanding,
+                roomId: id,
+              }
+            });
+            totalSettled += outstanding;
+          }
           await tx.order.update({
             where: { id: charge.orderId },
             data: { status: 'COMPLETED' }
           });
-          totalSettled += charge.amount;
         }
 
         // 3. Mark F&B charges as settled

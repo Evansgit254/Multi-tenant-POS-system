@@ -21,5 +21,10 @@ export const errorHandler = (
   }
 
   const status = err.status ?? 500;
-  res.status(status).json({ error: err.message || 'Internal server error' });
+  // L-12 FIX: In production, replace internal 500 messages with a safe generic string
+  // to prevent leaking Prisma internals, table names, or stack traces to clients
+  const message = (process.env.NODE_ENV === 'production' && status === 500)
+    ? 'An unexpected error occurred. Please try again or contact support.'
+    : (err.message || 'Internal server error');
+  res.status(status).json({ error: message });
 };

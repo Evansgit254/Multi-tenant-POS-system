@@ -57,18 +57,21 @@ router.post(
         });
         const shiftId = activeShift ? activeShift.id : undefined;
 
-        // 1. Pre-flight Stock Check
+        // 1. Pre-flight Stock Check + C-1 FIX: Atomic conditional update to eliminate TOCTOU race
         for (const item of items) {
           const menuItem = await tx.menuItem.findUnique({ 
             where: { id: item.menuItemId }, 
             include: { ingredients: { include: { inventoryItem: true } } } 
           });
-          if (!menuItem) throw new Error(`Item ${item.menuItemId} not found`);
+          if (!menuItem) throw Object.assign(new Error(`Menu item not found`), { safe: true });
           
           for (const ingredient of menuItem.ingredients) {
             const required = ingredient.quantity * item.quantity;
             if (ingredient.inventoryItem.currentStock < required) {
-              throw new Error(`Insufficient stock for ${ingredient.inventoryItem.name}. Required: ${required}, Available: ${ingredient.inventoryItem.currentStock}`);
+              throw Object.assign(
+                new Error(`Insufficient stock for "${ingredient.inventoryItem.name}". Required: ${required}, Available: ${ingredient.inventoryItem.currentStock}`),
+                { safe: true }
+              );
             }
           }
         }
@@ -78,7 +81,7 @@ router.post(
 
         for (const item of items) {
           const menuItem = await tx.menuItem.findUnique({ where: { id: item.menuItemId }, include: { ingredients: true } });
-          if (!menuItem) throw new Error(`Item ${item.menuItemId} not found`);
+          if (!menuItem) throw Object.assign(new Error(`Menu item not found`), { safe: true });//
           
           const price = Number(menuItem.price);
           const subtotal = price * item.quantity;
@@ -87,10 +90,15 @@ router.post(
           // Deduct stock for ingredients
           for (const ingredient of menuItem.ingredients) {
             const deduction = ingredient.quantity * item.quantity;
-            await tx.inventoryItem.update({
-              where: { id: ingredient.inventoryItemId },
+
+            // C-1 FIX: Atomic decrement with floor guard — prevents stock going negative under concurrency
+            const decremented = await tx.inventoryItem.updateMany({
+              where: { id: ingredient.inventoryItemId, currentStock: { gte: deduction } },
               data: { currentStock: { decrement: deduction } }
             });
+            if (decremented.count === 0) {
+              throw Object.assign(new Error(`Stock race: insufficient inventory at checkout`), { safe: true });
+            }
             await tx.stockTransaction.create({
               data: {
                 tenantId,
@@ -119,9 +127,9 @@ router.post(
         let discount = 0;
         let pointsRedeemed = 0;
 
-        // 2. Loyalty Redemption
+        // 2. Loyalty Redemption — H-3 FIX: Include tenantId to prevent cross-tenant point theft
         if (guestId && redeemPoints) {
-           const guest = await tx.guest.findUnique({ where: { id: guestId } });
+           const guest = await tx.guest.findUnique({ where: { id: guestId, tenantId } });
            if (guest && guest.loyaltyPoints > 0) {
              const pointsToUse = Math.min(guest.loyaltyPoints, Math.floor(subtotalTotal + taxAmount));
              discount = pointsToUse;
@@ -179,10 +187,12 @@ router.post(
         // FORENSIC GAP FIX: Secure room_charge payload so a swapped method doesn't bypass debts
         if (payment) {
           if (payment.method === 'room_charge') {
-            if (!roomId) throw new Error('roomId is required for room charge');
-            // Ensure the room actually belongs to the tenant
+            if (!roomId) throw Object.assign(new Error('roomId is required for room charge'), { safe: true });
+            // Ensure the room actually belongs to the tenant AND is occupied
             const room = await tx.room.findUnique({ where: { id: roomId, tenantId } });
-            if (!room) throw new Error('Invalid or unowned room for room charge');
+            if (!room) throw Object.assign(new Error('Invalid or unowned room for room charge'), { safe: true });
+            // H-4 FIX: Only allow charges to actively occupied rooms
+            if (room.status !== 'occupied') throw Object.assign(new Error('Cannot charge to a room that is not currently occupied'), { safe: true });
 
             await tx.roomCharge.create({
               data: {
@@ -256,7 +266,12 @@ router.post(
 
       res.status(201).json(order);
     } catch (error: any) {
-      res.status(500).json({ error: error.message || 'Failed to create order' });
+      console.error('[TEST DEBUG] POST /orders failed:', error);
+      // L-4 FIX: Only surface safe/known error messages to client
+      const message = error?.safe === true
+        ? error.message
+        : 'Failed to create order. Please try again.';
+      res.status(500).json({ error: message });
     }
   }
 );
@@ -285,10 +300,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 // GAP #2 FIX: Restore inventory on cancellation
 // GAP #4 FIX: Reverse loyalty points on cancellation
 // GAP #5 FIX: Normalize status codes to lowercase
-router.put('/:id/status', async (req: Request, res: Response): Promise<void> => {
+// H-2 FIX: Gate non-CANCELLED transitions to ensure only operational roles can progress orders
+router.put('/:id/status', authorize('hotel_admin', 'manager', 'cashier'), async (req: Request, res: Response): Promise<void> => {
   const { status } = req.body;
   
-  if (status === 'cancelled') {
+  if (status === 'CANCELLED') {
     return requirePermission(PERMISSIONS.VOID_ORDER)(req, res, async () => {
       try {
         await prisma.$transaction(async (tx) => {
@@ -301,7 +317,7 @@ router.put('/:id/status', async (req: Request, res: Response): Promise<void> => 
           });
 
           if (!order) { res.status(404).json({ error: 'Order not found' }); return; }
-          if (order.status === 'cancelled') { res.status(400).json({ error: 'Order already cancelled' }); return; }
+          if (order.status === 'CANCELLED') { res.status(400).json({ error: 'Order already cancelled' }); return; }
 
           // Restore inventory for each item's ingredients
           for (const orderItem of order.items) {
@@ -350,7 +366,7 @@ router.put('/:id/status', async (req: Request, res: Response): Promise<void> => 
 
           await tx.order.update({
             where: { id: req.params.id },
-            data: { status: 'cancelled' }
+            data: { status: 'CANCELLED' }
           });
         });
 
@@ -369,7 +385,7 @@ router.put('/:id/status', async (req: Request, res: Response): Promise<void> => 
     if (!existingOrder) { res.status(404).json({ error: 'Order not found' }); return; }
     
     // SECURITY GAP FIX: Ghost Sale Exploit (Prevent un-cancelling orders to bypass inventory deduction)
-    if (existingOrder.status === 'cancelled') {
+    if (existingOrder.status === 'CANCELLED') {
       res.status(403).json({ error: 'Cannot change the status of a cancelled order. Please create a new order instead.' }); 
       return;
     }
@@ -415,7 +431,7 @@ router.post(
       const { amount, method } = req.body;
 
     const activeShift = await prisma.shift.findFirst({
-      where: { cashierId: (req as any).user.id, tenantId, status: 'OPEN' }
+      where: { cashierId: req.user.id, tenantId, status: 'OPEN' }
     });
     const shiftId = activeShift ? activeShift.id : undefined;
 

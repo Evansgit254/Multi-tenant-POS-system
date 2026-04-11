@@ -125,6 +125,8 @@ router.get('/shift-summary', async (req: Request, res: Response): Promise<void> 
     const orders = await prisma.order.findMany({
       where: {
         tenantId,
+        // L-7 FIX: Only include orders that have a definitive status — excludes pending/in-progress
+        status: { in: ['COMPLETED', 'PARTIALLY_PAID', 'CANCELLED'] },
         createdAt: {
           gte: from ? new Date(from as string) : undefined,
           lte: toDate,

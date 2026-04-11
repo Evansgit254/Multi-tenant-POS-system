@@ -15,10 +15,8 @@ const router = Router();
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts per IP
-  skip: (req) => {
-    const ip = req.ip || req.socket.remoteAddress;
-    return process.env.NODE_ENV === 'test' || ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
-  },
+  // M-3 FIX: Strict rate limiting in production — but allow E2E testing locally
+  skip: () => process.env.NODE_ENV !== 'production',
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -28,7 +26,7 @@ const loginLimiter = rateLimit({
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: () => process.env.NODE_ENV !== 'production',
   message: { error: 'Too many accounts created from this IP. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -114,6 +112,12 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) { res.status(400).json({ errors: errors.array() }); return; }
 
+    // M-4 FIX: Allow disabling self-registration via env flag (set REGISTRATION_ENABLED=false in production)
+    if (process.env.REGISTRATION_ENABLED === 'false') {
+      res.status(403).json({ error: 'Self-registration is disabled. Please contact your system administrator.' });
+      return;
+    }
+
     const { email, password, name, hotelName } = req.body;
     
     // Check if user already exists
@@ -196,14 +200,16 @@ router.post('/forgot-password', [body('email').isEmail()], async (req: Request, 
   
   if (user) {
     const token = crypto.randomBytes(32).toString('hex');
+    // M-1 FIX: Store a SHA-256 hash of the token, not the plaintext
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        resetToken: token,
+        resetToken: tokenHash,
         resetTokenExpiry: new Date(Date.now() + 3600000) // 1 hr
       }
     });
-    // FIX: Actually send the reset email instead of just logging it
+    // Send the RAW token in the email link
     const resetUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/login?token=${token}`;
     const html = `
       <div style="font-family: Arial, sans-serif; padding: 24px; max-width: 560px;">
@@ -224,9 +230,11 @@ router.post('/forgot-password', [body('email').isEmail()], async (req: Request, 
 router.post('/reset-password', [body('token').notEmpty(), body('password').isLength({ min: 6 })], async (req: Request, res: Response): Promise<void> => {
   const { token, password } = req.body;
   
+  // M-1 FIX: Hash the incoming token before comparing with the stored hash
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   const user = await prisma.user.findFirst({
     where: {
-      resetToken: token,
+      resetToken: tokenHash,
       resetTokenExpiry: { gt: new Date() }
     }
   });
@@ -237,6 +245,12 @@ router.post('/reset-password', [body('token').notEmpty(), body('password').isLen
   await prisma.user.update({
     where: { id: user.id },
     data: { passwordHash, resetToken: null, resetTokenExpiry: null }
+  });
+
+  // M-2 FIX: Invalidate all existing sessions so compromised sessions can't linger
+  await prisma.session.updateMany({
+    where: { userId: user.id },
+    data: { isActive: false }
   });
 
   res.json({ message: 'Password successfully reset. You can now log in.' });
