@@ -5,6 +5,10 @@ import {
   BarChart4, FileText, Receipt, PackageSearch, TrendingUp,
   Award, DollarSign, ShoppingCart, Tag, ArrowUpRight, X
 } from 'lucide-react';
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as RechartsTooltip, ResponsiveContainer
+} from 'recharts';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -240,57 +244,45 @@ const Reports: React.FC = () => {
                   <Activity size={20} style={{ color: 'var(--accent)' }}/> 30-Day Revenue vs. Expenses
                 </h3>
                 
-                <div style={{ minWidth: '700px', height: '300px', position: 'relative', overflow: 'visible' }}>
-                  <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(1, pnlReport.dailyTrend.length - 1) * 40} 300`} preserveAspectRatio="none" style={{ overflow: 'visible' }}>
-                    {(() => {
-                      const maxVal = Math.max(1, ...pnlReport.dailyTrend.map(d => Math.max(d.revenue, d.expenses)));
-                      // Adjust to fit within SVG visually using 280 scale (leave 20px padding)
-                      const pointsRevenue = pnlReport.dailyTrend.map((d, i) => `${i * 40},${280 - (d.revenue / maxVal * 260)}`).join(' ');
-                      const pointsExpenses = pnlReport.dailyTrend.map((d, i) => `${i * 40},${280 - (d.expenses / maxVal * 260)}`).join(' ');
-                      
-                      const w = Math.max(0, (pnlReport.dailyTrend.length - 1) * 40);
-                      
-                      return (
-                        <>
-                          <defs>
-                            <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                            </linearGradient>
-                            <linearGradient id="gradExp" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.3" />
-                              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-
-                          {/* Grid lines */}
-                          <line x1="0" y1="150" x2={w} y2="150" stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
-                          <line x1="0" y1="280" x2={w} y2="280" stroke="var(--border)" strokeWidth="1" />
-
-                          {/* Revenue Area & Line */}
-                          <polygon points={`0,280 ${pointsRevenue} ${w},280`} fill="url(#gradRev)" />
-                          <polyline points={pointsRevenue} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                          
-                          {/* Expenses Area & Line */}
-                          <polygon points={`0,280 ${pointsExpenses} ${w},280`} fill="url(#gradExp)" />
-                          <polyline points={pointsExpenses} fill="none" stroke="#f43f5e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                          
-                          {/* Axis labels */}
-                          {pnlReport.dailyTrend.map((d, i) => (
-                            i % 5 === 0 ? (
-                              <text key={i} x={i * 40} y="295" fontSize="10" fontWeight="700" fill="var(--text-secondary)" textAnchor="middle">
-                                {d.date.substring(5, 10)}
-                              </text>
-                            ) : null
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </svg>
-                </div>
-                <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#10b981' }}></div><span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Revenue (Cash In)</span></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#f43f5e' }}></div><span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Expenses (Cash Out)</span></div>
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart data={pnlReport.dailyTrend} margin={{ top: 10, right: 8, left: 8, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradRevPnl" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradExpPnl" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.05)" strokeDasharray="4 4" />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false} tickLine={false}
+                      tick={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600 }}
+                      tickFormatter={(v: string) => v.substring(5, 10)}
+                      interval={4}
+                    />
+                    <YAxis
+                      axisLine={false} tickLine={false}
+                      tick={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600 }}
+                      tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                      width={36}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{ background: 'white', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '10px 14px' }}
+                      itemStyle={{ fontWeight: 700, fontSize: '0.85rem' }}
+                      labelStyle={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '4px' }}
+                      formatter={(value: any, name: any) => [`${tenant?.currency} ${Number(value).toLocaleString()}`, name === 'revenue' ? 'Revenue' : 'Expenses']}
+                    />
+                    <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2.5} fill="url(#gradRevPnl)" dot={false} activeDot={{ r: 5, fill: '#10b981' }} />
+                    <Area type="monotone" dataKey="expenses" stroke="#f43f5e" strokeWidth={2.5} fill="url(#gradExpPnl)" dot={false} activeDot={{ r: 5, fill: '#f43f5e' }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} /><span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Revenue (Cash In)</span></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f43f5e' }} /><span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Expenses (Cash Out)</span></div>
                 </div>
               </div>
             </div>
@@ -324,13 +316,28 @@ const Reports: React.FC = () => {
                 <div className="dashboard-card" style={{ padding: '1.5rem', flex: 2 }}>
                   <p className="section-label">Revenue Timeline</p>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}><TrendingUp size={18} style={{ color: '#10b981' }} /> 30-Day Revenue Trend</h3>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '180px', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-                    {analyticsData.revenueByDay.map((day, i) => {
-                      const maxRev = Math.max(...analyticsData.revenueByDay.map(d => d.revenue), 1);
-                      const heightPct = Math.max((day.revenue / maxRev) * 100, 2);
-                      return <div key={i} style={{ flex: 1, backgroundColor: 'var(--accent)', opacity: 0.8, borderRadius: '4px 4px 0 0', height: `${heightPct}%`, cursor: 'pointer' }} title={`${day.date}: ${tenant?.currency} ${day.revenue}`} />;
-                    })}
-                  </div>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart
+                      data={analyticsData.revenueByDay.map((d: any) => ({ name: d.date.substring(5, 10), sales: d.revenue }))}
+                      margin={{ top: 4, right: 0, left: 0, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="colorBarRep" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#b8860b" />
+                          <stop offset="95%" stopColor="#fbbf24" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.04)" strokeDasharray="4 4" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600 }} dy={6} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} width={32} />
+                      <RechartsTooltip
+                        cursor={{ fill: 'var(--bg-deep)' }}
+                        contentStyle={{ background: 'white', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 20px rgba(0,0,0,0.07)', padding: '8px 12px' }}
+                        formatter={(v: any) => [`${tenant?.currency} ${Number(v).toLocaleString()}`, 'Revenue']}
+                      />
+                      <Bar dataKey="sales" fill="url(#colorBarRep)" radius={[5, 5, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
 
                 <div className="dashboard-card" style={{ padding: '1.5rem', flex: 1 }}>
