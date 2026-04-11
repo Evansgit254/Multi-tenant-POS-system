@@ -1,13 +1,13 @@
-services:
+databases:
   # ----------------------------------------------------
   # 1. PostgreSQL Database
   # ----------------------------------------------------
-  - type: pgo
-    name: m-forge-db
-    plan: free # Note: Free DBs expire in 30 days unless upgraded
+  - name: m-forge-db
     databaseName: pos_db
     user: mforge_user
+    plan: free # Note: Free DBs expire in 30 days unless upgraded
 
+services:
   # ----------------------------------------------------
   # 2. Node.js Backend API
   # ----------------------------------------------------
