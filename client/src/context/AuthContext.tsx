@@ -14,6 +14,7 @@ interface Tenant {
   currency: string;
   taxRate: number;
   logoUrl?: string;
+  receiptFooter?: string;
 }
 
 interface AuthContextType {
