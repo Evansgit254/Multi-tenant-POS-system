@@ -148,8 +148,9 @@ const Dashboard: React.FC = () => {
   const dishes = stats?.trendingDishes || [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingBottom: '3rem' }}>
-      
+    <div className="dashboard-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingBottom: '3rem' }}>
+      <div className="ambient-mesh-bg" />
+
       {/* Header Section */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
@@ -185,22 +186,11 @@ const Dashboard: React.FC = () => {
       {/* KPI Bento Blocks */}
       <div className="dashboard-kpi-grid">
         {kpis.map((kpi, i) => (
-          <div key={i} className="card" style={{ 
-            padding: '2.25rem', background: 'var(--bg-elevated)', borderRadius: '32px', 
-            border: `1px solid ${kpi.border}`, boxShadow: `0 12px 30px -10px ${kpi.gradient.split(', ')[1].replace('0.12)', '0.1)')}`,
-            display: 'flex', flexDirection: 'column', gap: '2rem', position: 'relative', overflow: 'hidden',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'pointer',
+          <div key={i} className="dashboard-card" style={{ 
+            padding: '2.25rem',
+            display: 'flex', flexDirection: 'column', gap: '2rem',
             animation: `fadeUp 0.5s ease-out ${i * 0.05}s both`
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-6px)';
-            e.currentTarget.style.boxShadow = `0 24px 40px -12px ${kpi.gradient.split(', ')[1].replace('0.12)', '0.25)')}`;
-          }}
-          onMouseLeave={(e) => {
-             e.currentTarget.style.transform = 'translateY(0)';
-             e.currentTarget.style.boxShadow = `0 12px 30px -10px ${kpi.gradient.split(', ')[1].replace('0.12)', '0.1)')}`;
-          }}
-          >
+          }}>
             {/* Ambient Base Glow */}
             <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, background: kpi.gradient, opacity: 0.7, pointerEvents: 'none' }} />
 
@@ -227,10 +217,8 @@ const Dashboard: React.FC = () => {
 
       {/* Data Visualization Row */}
       <div className="responsive-grid">
-        <div className="card" style={{ 
-          background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', 
+        <div className="dashboard-card" style={{ 
           padding: '2.5rem', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 12px 40px -12px rgba(0,0,0,0.04)',
           animation: 'fadeUp 0.6s ease-out 0.2s both'
         }}>
           <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -288,9 +276,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="card" style={{ 
-          background: 'var(--bg-sidebar)', borderRadius: '32px', padding: '2.5rem', color: 'white',
-          boxShadow: '0 20px 40px -10px rgba(0,0,0,0.2)', position: 'relative', overflow: 'hidden',
+        <div className="dashboard-card" style={{ 
+          padding: '2.5rem',
           animation: 'fadeUp 0.6s ease-out 0.25s both'
         }}>
           {/* Subtle Graphic Wash */}
@@ -350,7 +337,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        <div className="card" style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem', boxShadow: '0 12px 40px -12px rgba(0,0,0,0.04)', animation: 'fadeUp 0.6s ease-out 0.3s both' }}>
+        <div className="dashboard-card" style={{ padding: '2.5rem', animation: 'fadeUp 0.6s ease-out 0.3s both' }}>
            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem' }}>Top Performers</h3>
            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {employees.slice(0, 3).map((emp: any, i: number) => (
@@ -370,7 +357,7 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        <div className="card" style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem', boxShadow: '0 12px 40px -12px rgba(0,0,0,0.04)', animation: 'fadeUp 0.6s ease-out 0.35s both' }}>
+        <div className="dashboard-card" style={{ padding: '2.5rem', animation: 'fadeUp 0.6s ease-out 0.35s both' }}>
            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem' }}>Trending Items</h3>
            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {dishes.slice(0, 3).map((dish: any, i: number) => (
@@ -390,7 +377,7 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        <div className="card" style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem', boxShadow: '0 12px 40px -12px rgba(0,0,0,0.04)', animation: 'fadeUp 0.6s ease-out 0.4s both' }}>
+        <div className="dashboard-card" style={{ padding: '2.5rem', animation: 'fadeUp 0.6s ease-out 0.4s both' }}>
            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f43f5e' }}>
              <AlertCircle size={22} /> Low Stock Alerts
            </h3>
@@ -417,8 +404,7 @@ const Dashboard: React.FC = () => {
               )}
            </div>
         </div>
-        
-        <div className="card" style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem', boxShadow: '0 12px 40px -12px rgba(0,0,0,0.04)', animation: 'fadeUp 0.6s ease-out 0.45s both' }}>
+        <div className="dashboard-card" style={{ padding: '2.5rem', animation: 'fadeUp 0.6s ease-out 0.45s both' }}>
            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
              <Wallet size={22} color="var(--accent)" /> Payment Methods
            </h3>
@@ -451,7 +437,7 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        <div className="card" style={{ background: 'var(--bg-elevated)', borderRadius: '32px', border: '1px solid var(--border)', padding: '2.5rem', boxShadow: '0 12px 40px -12px rgba(0,0,0,0.04)', animation: 'fadeUp 0.6s ease-out 0.5s both' }}>
+        <div className="dashboard-card" style={{ padding: '2.5rem', animation: 'fadeUp 0.6s ease-out 0.5s both' }}>
            <h3 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
              <Target size={22} color="var(--accent)" /> Floor Occupancy
            </h3>

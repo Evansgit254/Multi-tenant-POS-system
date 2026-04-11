@@ -11,6 +11,7 @@
   
   --bg-base: #f8f9fa;             /* Light Grayish/Off-White Background */
   --bg-elevated: #ffffff;
+  --bg-elevated-rgb: 255, 255, 255;
   --bg-deep: #f1f3f5;
   
   --text-primary: #1a1d23;
@@ -40,6 +41,7 @@
 .dark {
   --bg-base: #0f172a;             /* Slate 900 Background */
   --bg-elevated: #1e293b;         /* Slate 800 Elevated */
+  --bg-elevated-rgb: 30, 41, 59;
   --bg-deep: #020617;             /* Slate 950 Deep */
   
   --text-primary: #f8fafc;        /* Slate 50 */
@@ -437,6 +439,72 @@ thead th {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ── Ambient Mesh Gradients & Dashboard Overhaul ── */
+.dashboard-wrapper {
+  position: relative;
+  min-height: 100%;
+}
+
+.ambient-mesh-bg {
+  position: absolute;
+  top: -100px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 60%);
+  opacity: 0.08;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  animation: pulse-mesh 20s infinite alternate;
+}
+
+@keyframes pulse-mesh {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.08; }
+  50% { transform: scale(1.1) translate(-50px, 30px); opacity: 0.12; }
+  100% { transform: scale(0.9) translate(20px, -20px); opacity: 0.06; }
+}
+
+.dashboard-card {
+  background: rgba(var(--bg-elevated-rgb), 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 32px;
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px -12px rgba(0,0,0,0.06);
+  position: relative;
+  z-index: 1;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 50px -14px rgba(0,0,0,0.1);
+  border-color: rgba(var(--bg-elevated-rgb), 1);
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.dashboard-card:hover::before {
+  opacity: 1;
+}
+
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
 }
 
 .responsive-grid {
