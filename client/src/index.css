@@ -9,10 +9,10 @@
   --text-sidebar: #ffffff;
   --text-sidebar-muted: rgba(255, 255, 255, 0.7);
   
-  --bg-base: #f8f9fa;             /* Light Grayish/Off-White Background */
+  --bg-base: #f4f6f9;             /* Cold gray base — cards pop as pure white */
   --bg-elevated: #ffffff;
   --bg-elevated-rgb: 255, 255, 255;
-  --bg-deep: #f1f3f5;
+  --bg-deep: #eef1f5;
   
   --text-primary: #1a1d23;
   --text-primary: #1a1d23;
@@ -31,9 +31,11 @@
   --radius-lg: 20px;
   --radius-xl: 32px;
   
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  /* Multi-layer shadows like Stripe/Vercel - subtle but gives strong depth */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.04), 0 10px 15px -3px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 20px 25px -5px rgba(0,0,0,0.04);
+  --shadow-card: 0 0 0 1px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.03), 0 8px 16px rgba(0,0,0,0.04);
   
   --glass-blur: blur(12px);
 }
@@ -441,70 +443,69 @@ thead th {
   to { transform: rotate(360deg); }
 }
 
-/* ── Ambient Mesh Gradients & Dashboard Overhaul ── */
+/* ── Bright Minimalist Dashboard (Concept B) ── */
 .dashboard-wrapper {
   position: relative;
-  min-height: 100%;
-}
-
-.ambient-mesh-bg {
-  position: absolute;
-  top: -100px;
-  right: -200px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 60%);
-  opacity: 0.08;
-  filter: blur(80px);
-  z-index: 0;
-  pointer-events: none;
-  animation: pulse-mesh 20s infinite alternate;
-}
-
-@keyframes pulse-mesh {
-  0% { transform: scale(1) translate(0, 0); opacity: 0.08; }
-  50% { transform: scale(1.1) translate(-50px, 30px); opacity: 0.12; }
-  100% { transform: scale(0.9) translate(20px, -20px); opacity: 0.06; }
 }
 
 .dashboard-card {
-  background: rgba(var(--bg-elevated-rgb), 0.7);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 32px;
-  border: 1px solid var(--border);
-  box-shadow: 0 16px 40px -12px rgba(0,0,0,0.06);
+  background: var(--bg-elevated);
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-card);
   position: relative;
-  z-index: 1;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
   overflow: hidden;
 }
 
 .dashboard-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 24px 50px -14px rgba(0,0,0,0.1);
-  border-color: rgba(var(--bg-elevated-rgb), 1);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.05), 0 16px 32px rgba(0,0,0,0.06);
+  transform: translateY(-3px);
 }
 
-.dashboard-card::before {
-  content: '';
+.kpi-accent-bar {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  opacity: 0;
-  transition: opacity 0.4s;
+  height: 3px;
+  border-radius: 20px 20px 0 0;
 }
 
-.dashboard-card:hover::before {
-  opacity: 1;
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.stat-pill.positive {
+  background: rgba(16,185,129, 0.1);
+  color: #059669;
+}
+
+.stat-pill.negative {
+  background: rgba(244, 63, 94, 0.1);
+  color: #e11d48;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
 }
 
 .hover-lift {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 14px;
 }
 .hover-lift:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .responsive-grid {

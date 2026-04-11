@@ -148,8 +148,7 @@ const Dashboard: React.FC = () => {
   const dishes = stats?.trendingDishes || [];
 
   return (
-    <div className="dashboard-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingBottom: '3rem' }}>
-      <div className="ambient-mesh-bg" />
+    <div className="dashboard-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '3rem' }}>
 
       {/* Header Section */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
@@ -187,27 +186,28 @@ const Dashboard: React.FC = () => {
       <div className="dashboard-kpi-grid">
         {kpis.map((kpi, i) => (
           <div key={i} className="dashboard-card" style={{ 
-            padding: '2.25rem',
-            display: 'flex', flexDirection: 'column', gap: '2rem',
-            animation: `fadeUp 0.5s ease-out ${i * 0.05}s both`
+            padding: '1.75rem',
+            display: 'flex', flexDirection: 'column', gap: '1.25rem',
+            animation: `fadeUp 0.4s ease-out ${i * 0.05}s both`
           }}>
-            {/* Ambient Base Glow */}
-            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, background: kpi.gradient, opacity: 0.7, pointerEvents: 'none' }} />
+            {/* Thin accent top bar */}
+            <div className="kpi-accent-bar" style={{ background: kpi.color }} />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
-              <div style={{ width: '4rem', height: '4rem', borderRadius: '22px', background: 'var(--bg-deep)', border: `1px solid ${kpi.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <kpi.icon size={28} style={{ color: kpi.color }} strokeWidth={2.5} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ width: '3rem', height: '3rem', borderRadius: '14px', background: kpi.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <kpi.icon size={22} style={{ color: kpi.color }} strokeWidth={2.5} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 900, color: kpi.positive ? '#10b981' : '#f43f5e', padding: '8px 14px', borderRadius: '99px', background: 'var(--bg-deep)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                {kpi.trend} {kpi.positive ? <ArrowUpRight size={16} strokeWidth={3} /> : <ArrowDownRight size={16} strokeWidth={3} />}
-              </div>
+              <span className={`stat-pill ${kpi.positive ? 'positive' : 'negative'}`}>
+                {kpi.positive ? <ArrowUpRight size={13} strokeWidth={3} /> : <ArrowDownRight size={13} strokeWidth={3} />}
+                {kpi.trend.split(' ')[0]}
+              </span>
             </div>
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <p style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>
                 {kpi.label}
               </p>
-              <h3 style={{ fontSize: '2.75rem', fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text-primary)', lineHeight: 1 }}>
-                {kpi.isCurrency ? <span style={{ fontSize: '1.4rem', verticalAlign: 'middle', marginRight: '6px', opacity: 0.4 }}>{tenant?.currency}</span> : ''}
+              <h3 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--text-primary)', lineHeight: 1 }}>
+                {kpi.isCurrency ? <span style={{ fontSize: '1rem', verticalAlign: 'middle', marginRight: '4px', opacity: 0.5, fontWeight: 600 }}>{tenant?.currency}</span> : ''}
                 {kpi.value.toLocaleString()}
               </h3>
             </div>
@@ -218,18 +218,18 @@ const Dashboard: React.FC = () => {
       {/* Data Visualization Row */}
       <div className="responsive-grid">
         <div className="dashboard-card" style={{ 
-          padding: '2.5rem', display: 'flex', flexDirection: 'column',
-          animation: 'fadeUp 0.6s ease-out 0.2s both'
+          padding: '2rem', display: 'flex', flexDirection: 'column',
+          animation: 'fadeUp 0.5s ease-out 0.2s both'
         }}>
-          <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.75rem', letterSpacing: '-0.02em' }}>
-                <Activity size={24} color="var(--accent)" /> Sales Velocity
+              <p className="section-label">Revenue Trend</p>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
+                <Activity size={20} color="var(--accent)" /> Sales Velocity
               </h3>
-              <p style={{ fontSize: '0.90rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: '6px' }}>Real-time transactional flow across active terminals</p>
             </div>
-            <div style={{ padding: '8px 16px', background: 'var(--bg-deep)', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent-glow)' }} /> LIVE SYNC
+            <div style={{ padding: '6px 14px', background: 'rgba(184,134,11,0.08)', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)', border: '1px solid rgba(184,134,11,0.2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> LIVE
             </div>
           </div>
           
@@ -257,9 +257,9 @@ const Dashboard: React.FC = () => {
                 />
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
                 <Tooltip 
-                  contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ color: 'var(--text-primary)', fontWeight: 800 }}
-                  labelStyle={{ color: 'var(--text-muted)', fontWeight: 700, marginBottom: '4px' }}
+                  contentStyle={{ background: 'white', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '10px 14px' }}
+                  itemStyle={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.9rem' }}
+                  labelStyle={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', marginBottom: '4px' }}
                   formatter={(value: any) => [`${tenant?.currency} ${Number(value).toLocaleString()}`, 'Revenue']}
                 />
                 <Area 
@@ -277,25 +277,25 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="dashboard-card" style={{ 
-          padding: '2.5rem',
-          animation: 'fadeUp 0.6s ease-out 0.25s both'
+          padding: '2rem',
+          animation: 'fadeUp 0.5s ease-out 0.25s both'
         }}>
-          {/* Subtle Graphic Wash */}
-          <div style={{ position: 'absolute', top: '-20%', right: '-20%', width: '300px', height: '300px', background: 'var(--accent)', opacity: 0.15, filter: 'blur(80px)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
-            <Sparkles size={24} color="var(--accent)" /> Channel Distribution
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', zIndex: 1, minHeight: '300px' }}>
-            <ResponsiveContainer width="100%" height={220}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p className="section-label">Service Channels</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
+              <Sparkles size={20} color="var(--accent)" /> Channel Distribution
+            </h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '280px' }}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
                   data={donutData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={5}
+                  innerRadius={55}
+                  outerRadius={82}
+                  paddingAngle={4}
                   dataKey="value"
                   stroke="none"
                 >
@@ -304,33 +304,30 @@ const Dashboard: React.FC = () => {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px' }}
-                  itemStyle={{ color: 'white', fontWeight: 800 }}
+                  contentStyle={{ background: 'white', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                  itemStyle={{ color: 'var(--text-primary)', fontWeight: 700 }}
                   formatter={(value: any) => [`${Math.round((Number(value) / dTotal) * 100)}%`, 'Volume']}
                 />
               </PieChart>
             </ResponsiveContainer>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 0.5rem' }}>
               {donutData.map((ch, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: ch.color, boxShadow: `0 0 8px ${ch.color}` }} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{ch.name}</span>
+                    <div style={{ width: 9, height: 9, borderRadius: '3px', background: ch.color }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{ch.name}</span>
                   </div>
-                  <span style={{ fontSize: '1rem', fontWeight: 900, marginTop: '4px' }}>{Math.round((ch.value / dTotal) * 100)}%</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-primary)' }}>{Math.round((ch.value / dTotal) * 100)}%</span>
                 </div>
               ))}
             </div>
           </div>
           
-          <div style={{ marginTop: 'auto', paddingTop: '4rem', position: 'relative', zIndex: 1 }}>
-            <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.06)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <Clock size={16} color="var(--accent)" />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.7, letterSpacing: '0.05em' }}>SYSTEM UPTIME</span>
-               </div>
-               <p style={{ fontSize: '1.05rem', fontWeight: 800 }}>Real-time data synced 2s ago</p>
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Clock size={14} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Refreshed every 15 seconds</span>
             </div>
           </div>
         </div>
