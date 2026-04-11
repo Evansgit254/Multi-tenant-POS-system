@@ -49,8 +49,4 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        # We must link this to the backend Web Service automatically
-        fromService:
-          type: web
-          name: mumo-pos-server
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://mumo-pos-server.onrender.com
